@@ -40,18 +40,28 @@ class PasswordManager:
 
 # --- 3. DATABASE MANAGER (GOOGLE SHEETS) ---
 # Hàm này giúp kết nối với "Ổ cứng"
+# --- SỬA LẠI HÀM NÀY ĐỂ BẮT LỖI ---
 def connect_gsheet():
     try:
         # Lấy thông tin Service Account từ Secrets
-        # Chị cần cấu hình cái này trong secrets.toml
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        creds_dict = dict(st.secrets["gcp_service_account"]) # Cần cấu hình cái này
+        
+        # Kiểm tra xem có secrets chưa
+        if "gcp_service_account" not in st.secrets:
+            st.error("❌ LỖI: Chưa cấu hình [gcp_service_account] trong Secrets!")
+            return None
+
+        creds_dict = dict(st.secrets["gcp_service_account"])
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
-        # Mở file sheet theo tên (Chị phải tạo file này trên Drive trước và share cho email của service account)
+        
+        # Mở file sheet theo tên
         sheet = client.open("AI_History_Logs").sheet1 
         return sheet
+        
     except Exception as e:
+        # IN LỖI RA MÀN HÌNH ĐỂ CHỊ THẤY
+        st.error(f"❌ KHÔNG KẾT NỐI ĐƯỢC GOOGLE SHEET: {e}")
         return None
 
 def luu_lich_su_vinh_vien(loai, tieu_de, noi_dung):
