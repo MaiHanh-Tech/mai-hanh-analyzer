@@ -64,7 +64,7 @@ with st.sidebar:
     
     if file_excel:
         try:
-            df = pd.read_csv(uploaded_excel).dropna(subset=['Tên sách'])
+            df = pd.read_excel(file_excel).dropna(subset=['Tên sách'])
             vec_model = load_models()
             content = [f"{r['Tên sách']} {r['CẢM NHẬN']}" for i,r in df.iterrows()]
             db_vec = vec_model.encode(content)
