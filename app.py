@@ -158,7 +158,41 @@ def show_main_app():
             st.session_state.user_logged_in = False
             st.session_state.current_user = None
             st.rerun()
-    
+    # --- DÁN ĐOẠN NÀY VÀO CUỐI SIDEBAR ---
+    st.markdown("---")
+    st.subheader("🛠️ Công cụ Kỹ thuật")
+    if st.button("Kiểm tra kết nối Google Sheet"):
+        try:
+            # 1. Kiểm tra Secrets
+            if "gcp_service_account" not in st.secrets:
+                st.error("❌ Chưa có thông tin Secrets!")
+                st.stop()
+            
+            # 2. Xử lý Key
+            creds_dict = dict(st.secrets["gcp_service_account"])
+            if "private_key" in creds_dict:
+                creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+            
+            # 3. Thử kết nối
+            scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+            client = gspread.authorize(creds)
+            
+            # 4. In ra Email Robot (QUAN TRỌNG)
+            st.info(f"🤖 Email Robot: {creds.service_account_email}")
+            st.write("👉 Hãy chắc chắn Chị đã Share file Sheet cho email này!")
+
+            # 5. Thử mở file
+            sheet = client.open("AI_History_Logs").sheet1
+            st.success(f"✅ KẾT NỐI THÀNH CÔNG! Đã tìm thấy file: {sheet.title}")
+            
+            # 6. Thử ghi 1 dòng test
+            sheet.append_row(["Test", "Test", "Test", "Kết nối OK"])
+            st.success("✅ Đã ghi thử 1 dòng 'Test' vào Sheet. Chị mở ra xem nhé!")
+            
+        except Exception as e:
+            st.error(f"❌ LỖI CỤ THỂ: {e}")
+            
     st.title("💎 The Mai Hanh Super-App")
     tab1, tab2, tab3, tab4 = st.tabs(["📚 Phân Tích Sách", "✍️ Dịch Giả", "🗣️ Tranh Biện", "⏳ Lịch Sử "])
 
