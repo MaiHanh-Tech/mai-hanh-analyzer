@@ -156,30 +156,39 @@ with tab1:
             # Lưu vào lịch sử
             luu_lich_su("Phân Tích Sách", f"Batch {len(uploaded_files)} files", full_report)
 
-# ================= TAB 2: DỊCH GIẢ XỊN (MỚI) =================
+# ===== TAB 2: DỊCH GIẢ ĐA NĂNG (NÂNG CẤP) =====
 with tab2:
-    st.header("Dịch Thuật & Phân Tích Văn Phong")
-    col_input, col_output = st.columns(2)
-    
-    with col_input:
-        text_to_translate = st.text_area("Nhập văn bản (Anh/Trung):", height=300)
-        style = st.selectbox("Chọn phong cách dịch:", ["Hàn lâm/Học thuật", "Văn học/Truyền cảm", "Đời thường/Dễ hiểu", "Kinh tế/Thương mại"])
-        btn_translate = st.button("✍️ Dịch & Phân Tích")
-    
-    with col_output:
-        if btn_translate and text_to_translate:
-            with st.spinner("Đang dịch giả lập..."):
-                prompt = f"""
-                Bạn là Dịch giả cao cấp. Hãy thực hiện 2 việc:
-                1. **Dịch** đoạn văn bản sau sang Tiếng Việt theo phong cách: **{style}**.
-                2. **Phân tích từ vựng:** Chọn ra 3 từ/cụm từ hay nhất trong bản gốc, giải thích nghĩa sâu và ngữ cảnh sử dụng.
-                
-                Văn bản gốc:
-                {text_to_translate}
-                """
-                res = model.generate_content(prompt)
-                st.markdown(res.text)
-                luu_lich_su("Dịch Thuật", f"Dịch phong cách {style}", res.text)
+    st.header("Dịch Thuật Thông Minh (Tự động nhận diện)")
+    c1, c2 = st.columns(2)
+    with c1:
+        txt_in = st.text_area("Nhập văn bản (Việt/Anh/Trung):", height=300, placeholder="Ví dụ: Nhập tiếng Việt để dịch sang Anh & Trung. Nhập ngoại ngữ để dịch sang Việt.")
+        style = st.selectbox("Phong cách:", ["Hàn lâm/Học thuật", "Văn học/Cảm xúc", "Đời thường/Dễ hiểu", "Thương mại/Kinh tế"])
+        if st.button("✍️ Dịch Ngay"):
+            if txt_in:
+                with st.spinner("Đang phân tích ngôn ngữ và dịch..."):
+                    # PROMPT THÔNG MINH ĐA NGÔN NGỮ
+                    prompt = f"""
+                    Bạn là Chuyên gia Ngôn ngữ cao cấp.
+                    Nhiệm vụ: Dịch và Phân tích văn bản sau.
+                    
+                    INPUT: "{txt_in}"
+                    
+                    LOGIC XỬ LÝ:
+                    1. Tự động nhận diện ngôn ngữ đầu vào.
+                    2. **NẾU LÀ TIẾNG VIỆT**:
+                       - Dịch sang **Tiếng Anh** (Phong cách: {style}).
+                       - Dịch sang **Tiếng Trung** (Bao gồm: Chữ Hán, **Pinyin**, và Hán Việt).
+                    3. **NẾU LÀ NGOẠI NGỮ (Anh/Trung/Pháp...)**:
+                       - Dịch sang **Tiếng Việt** (Phong cách: {style}).
+                    
+                    YÊU CẦU BỔ SUNG:
+                    - Sau khi dịch, hãy chọn ra 3 từ vựng/cấu trúc ngữ pháp đắt giá nhất để phân tích sâu (ngữ nghĩa, cách dùng).
+                    - Trình bày rõ ràng, dễ nhìn.
+                    """
+                    res = model.generate_content(prompt)
+                    with c2:
+                        st.markdown(res.text)
+                    luu_lich_su("Dịch Thuật", f"Dịch: {{txt_in[:20]}}...", res.text)
 
 # ================= TAB 3: TRANH BIỆN (DEBATER - MỚI) =================
 with tab3:
