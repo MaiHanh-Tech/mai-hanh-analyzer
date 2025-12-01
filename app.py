@@ -156,7 +156,7 @@ if st.button("🚀 PHÂN TÍCH & TỔNG HỢP CHIẾN LƯỢC", type="primary"):
                     st.download_button("💾 Tải Báo Cáo Tổng Hợp", res_tong_hop.text, file_name="Bao_Cao_Tong_Hop.txt")
                 except:
                     st.error("Lỗi khi tổng hợp.")
-"""
+
 
 with open("app.py", "w", encoding='utf-8') as f:
     f.write(code_app)
