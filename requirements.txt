@@ -8,3 +8,5 @@ python-docx
 beautifulsoup4
 openpyxl
 numpy
+gspread
+oauth2client
