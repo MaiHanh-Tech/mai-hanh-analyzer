@@ -335,10 +335,10 @@ def show_main_app():
         voice_options = {
             "🇻🇳 Việt - Nam (Nam Minh - Trầm ấm)": "vi-VN-NamMinhNeural",
             "🇻🇳 Việt - Nữ (Hoài My - Ngọt ngào)": "vi-VN-HoaiMyNeural",
-            "🇺🇸 Anh - Nam (Christopher - Trầm, Lịch lãm)": "en-US-ChristopherNeural",
-            "🇺🇸 Anh - Nữ (Jenny - Tự nhiên, Thanh toát)": "en-US-JennyNeural",
-            "🇨🇳 Trung - Nam (Yunxi - Trầm ổn, Tự nhiên)": "zh-CN-YunxiNeural",
-            "🇨🇳 Trung - Nữ (Xiaoxiao - Ấm áp, Ngọt ngào)": "zh-CN-XiaoxiaoNeural"
+            "🇺🇸 Anh - Nam (Andrew - Trầm, Lịch lãm)": "en-US-AndrewMultilingualNeural",
+            "🇺🇸 Anh - Nữ (Emma - Tự nhiên, Thanh toát)": "en-US-EmmaNeural",
+            "🇨🇳 Trung - Nam (Yunjian - Trầm ổn, Tự nhiên)": "zh-CN-YunjianNeural",
+            "🇨🇳 Trung - Nữ (Xiaoyi - Ấm áp, Ngọt ngào)": "zh-CN-XiaoyiNeural"
         }
 
         # 2. GIAO DIỆN NHẬP LIỆU
