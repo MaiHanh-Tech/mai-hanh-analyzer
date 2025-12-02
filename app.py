@@ -665,9 +665,14 @@ def show_main_app():
                     except Exception as e:
                         st.error(f"❌ Lỗi TTS: {str(e)}")
 
-    # === TAB 5: LỊCH SỬ & NHẬT KÝ CẢM XÚC ===
+     # === TAB 5: LỊCH SỬ & NHẬT KÝ CẢM XÚC ===
     with tab5:
-        st.header("Kho Lưu Trữ & Nhật Ký Cảm Xúc")
+        # [SỬA ĐỔI 3] HIỂN THỊ TIÊU ĐỀ THEO QUYỀN
+        if st.session_state.get("is_admin"):
+            st.header("⚡ Trung Tâm Quản Lý Dữ Liệu (Admin Mode)")
+            st.info("Bạn đang ở chế độ Admin: Có thể xem nhật ký của TẤT CẢ người dùng.")
+        else:
+            st.header(f"Nhật Ký Cá Nhân Của {st.session_state.current_user_name}")
 
         if st.button("🔄 Tải lại Lịch sử"):
             st.session_state.history = tai_lich_su_tu_sheet()
@@ -679,27 +684,27 @@ def show_main_app():
             # 1) BIỂU ĐỒ MOOD TIMELINE
             try:
                 df_hist = pd.DataFrame(history)
-                # Chuyển cột time sang datetime
                 df_hist["time_dt"] = pd.to_datetime(df_hist["time"], errors="coerce")
                 df_hist = df_hist.dropna(subset=["time_dt"])
                 
-                # Ép kiểu score
                 if "sentiment_score" in df_hist.columns:
                     df_hist["sentiment_score"] = pd.to_numeric(df_hist["sentiment_score"], errors="coerce")
                     df_sent = df_hist.dropna(subset=["sentiment_score"])
                     
                     if not df_sent.empty:
-                        st.subheader("📈 Biểu đồ Cảm xúc (Mood Timeline)")
-                        st.caption("Theo dõi chỉ số cảm xúc của Chị qua từng lần sử dụng App (Score từ -1 đến 1).")
+                        st.subheader("📈 Biểu đồ Cảm xúc")
+                        
+                        # Admin xem biểu đồ gộp hoặc tách màu theo User
+                        color_by = "user" if st.session_state.is_admin else "sentiment_label"
                         
                         fig = px.line(
                             df_sent.sort_values("time_dt"), 
                             x="time_dt", 
                             y="sentiment_score",
-                            color="sentiment_label",
+                            color=color_by,
                             markers=True,
                             title="Biến thiên Cảm xúc theo Thời gian",
-                            hover_data=["title"]
+                            hover_data=["title", "user"]
                         )
                         st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
@@ -712,9 +717,12 @@ def show_main_app():
                 senti_info = ""
                 if "sentiment_label" in item:
                     senti_info = f" | 🎭 {item.get('sentiment_label', 'Neutral')} ({item.get('sentiment_score', 0.0):.2f})"
-                    
+                
+                # Hiển thị thêm tên User nếu là Admin
+                user_tag = f"👤 [{item.get('user', 'Unknown')}] " if st.session_state.is_admin else ""
+                
                 with st.expander(
-                    f"⏰ {item['time']} | {item['type']} | {item['title']}{senti_info}"
+                    f"⏰ {item['time']} | {user_tag}{item['type']} | {item['title']}{senti_info}"
                 ):
                     st.markdown(item["content"])
         else:
