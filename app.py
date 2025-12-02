@@ -88,11 +88,9 @@ def phan_tich_cam_xuc(text: str):
     Dùng Gemini để chấm điểm cảm xúc [-1, 1]
     """
     try:
-        # Cấu hình lại Gemini tạm thời trong hàm này để đảm bảo thread-safe
         sys_api_key = st.secrets["system"]["gemini_api_key"]
         genai.configure(api_key=sys_api_key)
         
-        # Dùng flash cho rẻ và nhanh
         try:
             sentiment_model = genai.GenerativeModel("gemini-2.5-pro")
         except:
@@ -102,43 +100,36 @@ def phan_tich_cam_xuc(text: str):
                 sentiment_model = genai.GenerativeModel("gemini-pro")
 
         prompt = f"""
-        Bạn là một chuyên gia tâm lý học dữ liệu. Hãy phân tích đoạn văn bản sau của người dùng (Mai Hạnh) và trả về kết quả dưới dạng JSON thuần túy (không markdown).
-        
-        Yêu cầu:
-        1. "sentiment_score": Một số thực từ -1.0 (Rất tiêu cực/Buồn/Giận) đến 1.0 (Rất tích cực/Vui/Hào hứng). 0 là trung tính.
-        2. "sentiment_label": Nhãn cảm xúc (ví dụ: "Tò mò", "Buồn", "Vui vẻ", "Hào hứng", "Giận dữ", "Trung tính").
-
+        Bạn là một chuyên gia tâm lý học dữ liệu. Hãy phân tích đoạn văn bản sau và trả về JSON thuần túy.
+        Yêu cầu: "sentiment_score" (-1.0 đến 1.0), "sentiment_label".
         Văn bản: \"\"\"{text[:1000]}\"\"\"
         """
 
         res = sentiment_model.generate_content(prompt)
         raw = res.text or ""
         
-        # Lọc lấy JSON
         m = re.search(r"\{.*\}", raw, re.S)
-        if not m:
-            return 0.0, "Neutral"
+        if not m: return 0.0, "Neutral"
             
         data = json.loads(m.group(0))
-        score = float(data.get("sentiment_score", 0.0))
-        label = str(data.get("sentiment_label", "Neutral"))
-        
-        return score, label
-    except Exception as e:
-        # print(f"Lỗi sentiment: {e}") # Debug
+        return float(data.get("sentiment_score", 0.0)), str(data.get("sentiment_label", "Neutral"))
+    except Exception:
         return 0.0, "Error"
 
 
+# --- [SỬA ĐỔI 1] LƯU LỊCH SỬ KÈM TÊN USER ---
 def luu_lich_su_vinh_vien(loai, tieu_de, noi_dung):
     thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Lấy tên user hiện tại đang đăng nhập
+    current_user = st.session_state.get("current_user_name", "Unknown")
 
-    # 1. Phân tích cảm xúc tự động cho nội dung này
-    # (Chỉ phân tích nếu nội dung là tiếng Việt/Anh có ý nghĩa, không phải code)
+    # Phân tích cảm xúc
     score, label = 0.0, "Neutral"
-    if len(noi_dung) > 10 and "{" not in noi_dung[:5]: # Tránh phân tích code JSON
+    if len(noi_dung) > 10 and "{" not in noi_dung[:5]:
          score, label = phan_tich_cam_xuc(tieu_de + ": " + noi_dung)
 
-    # 2. Lưu RAM
+    # Lưu RAM
     if "history" not in st.session_state:
         st.session_state.history = []
         
@@ -148,48 +139,62 @@ def luu_lich_su_vinh_vien(loai, tieu_de, noi_dung):
             "type": loai,
             "title": tieu_de,
             "content": noi_dung,
+            "user": current_user, # Lưu thêm user vào RAM
             "sentiment_score": score,
             "sentiment_label": label,
         }
     )
 
-    # 3. Lưu Cloud
+    # Lưu Cloud (Thêm cột User vào giữa Content và Score)
     try:
         sheet = connect_gsheet()
         if sheet:
-            # Append: Time, Type, Title, Content, SentimentScore, SentimentLabel
+            # Cấu trúc cột Sheet: Time | Type | Title | Content | User | Score | Label
             sheet.append_row(
-                [thoi_gian, loai, tieu_de, noi_dung, score, label]
+                [thoi_gian, loai, tieu_de, noi_dung, current_user, score, label]
             )
     except Exception:
         pass
 
 
+# --- [SỬA ĐỔI 2] TẢI LỊCH SỬ CÓ LỌC THEO USER ---
 def tai_lich_su_tu_sheet():
     try:
         sheet = connect_gsheet()
         if sheet:
             data = sheet.get_all_records()
             formatted = []
+            
+            # Lấy thông tin phiên đăng nhập
+            my_user = st.session_state.get("current_user_name", "")
+            i_am_admin = st.session_state.get("is_admin", False)
+
             for item in data:
-                # Xử lý an toàn nếu cột không tồn tại
-                formatted.append(
-                    {
-                        "time": item.get("Time", ""),
-                        "type": item.get("Type", ""),
-                        "title": item.get("Title", ""),
-                        "content": item.get("Content", ""),
-                        "sentiment_score": item.get("SentimentScore", 0.0),
-                        "sentiment_label": item.get("SentimentLabel", "Neutral"),
-                    }
-                )
+                # Lấy người tạo ra dòng log này (Cột User trong Sheet)
+                row_owner = item.get("User", "Unknown")
+                
+                # LOGIC PHÂN QUYỀN:
+                # 1. Nếu mình là Admin -> Xem được hết.
+                # 2. Nếu không phải Admin -> Chỉ xem dòng nào có User trùng tên mình.
+                if i_am_admin or (row_owner == my_user):
+                    formatted.append(
+                        {
+                            "time": item.get("Time", ""),
+                            "type": item.get("Type", ""),
+                            "title": item.get("Title", ""),
+                            "content": item.get("Content", ""),
+                            "user": row_owner, # Lấy về để hiển thị (nếu là admin)
+                            "sentiment_score": item.get("SentimentScore", 0.0),
+                            "sentiment_label": item.get("SentimentLabel", "Neutral"),
+                        }
+                    )
             return formatted
     except Exception:
         return []
     return []
 
 
-# --- 4. CÁC HÀM XỬ LÝ AI & FILE ---
+# --- 4. CÁC HÀM XỬ LÝ AI & FILE (GIỮ NGUYÊN) ---
 @st.cache_resource
 def load_models():
     return SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
@@ -216,7 +221,7 @@ def doc_file(uploaded_file):
     return ""
 
 
-# --- 4b. HÀM EDGE TTS (TẠO GIỌNG NÓI) ---
+# --- 4b. HÀM EDGE TTS ---
 async def _edge_tts_generate(text, voice_code, rate, out_path):
     communicate = edge_tts.Communicate(text, voice_code, rate=rate)
     await communicate.save(out_path)
@@ -277,9 +282,14 @@ def show_main_app():
 
     # --- SIDEBAR ---
     with st.sidebar:
-        st.success(f"👤 User: {st.session_state.current_user_name}")
+        # Hiển thị rõ đang đăng nhập là ai
+        role_display = "Admin" if st.session_state.get("is_admin") else "User"
+        st.success(f"👤 {st.session_state.current_user_name} ({role_display})")
+        
         if st.button("Đăng Xuất"):
             st.session_state.user_logged_in = False
+            st.session_state.current_user = None
+            st.session_state.is_admin = False
             st.rerun()
 
     st.title("💎 The Mai Hanh Super-App")
@@ -420,7 +430,6 @@ def show_main_app():
                 
                 vec_model = load_models()
                 
-                # Tính toán vector nếu chưa có
                 if "book_embs" not in st.session_state:
                     with st.spinner("Đang vẽ bản đồ sao..."):
                         contents = [
@@ -440,21 +449,18 @@ def show_main_app():
                     with c_slider2:
                         threshold = st.slider("Độ tương đồng tối thiểu để nối dây:", 0.0, 1.0, 0.4)
 
-                    # Tạo Graph
                     sim_matrix = cosine_similarity(embs, embs)
                     nodes = []
                     edges = []
                     
-                    # Thêm Nodes
                     for i in range(min(len(titles), max_nodes)):
                         nodes.append(Node(
                             id=str(i), 
                             label=titles[i], 
                             size=25,
-                            color="#FFD166" # Màu vàng cam
+                            color="#FFD166" 
                         ))
                     
-                    # Thêm Edges
                     for i in range(len(nodes)):
                         for j in range(i + 1, len(nodes)):
                             score = sim_matrix[i, j]
@@ -463,7 +469,7 @@ def show_main_app():
                                     source=str(i), 
                                     target=str(j),
                                     label=f"{score:.2f}",
-                                    color="#118AB2" # Màu xanh
+                                    color="#118AB2" 
                                 ))
 
                     config = Config(
@@ -477,19 +483,16 @@ def show_main_app():
                         collapsible=False
                     )
 
-                    # Hiển thị Graph
                     return_value = agraph(nodes=nodes, edges=edges, config=config)
                     
-                    # Xử lý sự kiện Click vào Node
                     if return_value:
                         selected_idx = int(return_value)
                         st.info(f"📖 Bạn đang chọn sách: **{titles[selected_idx]}**")
-                        # Tìm sách liên quan nhất
                         sims = sim_matrix[selected_idx]
-                        related_indices = np.argsort(sims)[::-1][1:4] # Top 3 (trừ chính nó)
+                        related_indices = np.argsort(sims)[::-1][1:4]
                         st.write("🔗 **Các sách liên quan nhất:**")
                         for r_idx in related_indices:
-                            if sims[r_idx] > 0.2: # Chỉ hiện nếu có chút liên quan
+                            if sims[r_idx] > 0.2:
                                 st.markdown(f"- {titles[r_idx]} *(Độ giống: {sims[r_idx]*100:.1f}%)*")
 
             except Exception as e:
@@ -659,13 +662,12 @@ def show_main_app():
                             mime="audio/mpeg",
                         )
                         
-                        # Lưu lịch sử kèm text
                         luu_lich_su_vinh_vien("Tạo Audio", selected_label, input_text)
 
                     except Exception as e:
                         st.error(f"❌ Lỗi TTS: {str(e)}")
 
-     # === TAB 5: LỊCH SỬ & NHẬT KÝ CẢM XÚC ===
+    # === TAB 5: LỊCH SỬ & NHẬT KÝ CẢM XÚC ===
     with tab5:
         # [SỬA ĐỔI 3] HIỂN THỊ TIÊU ĐỀ THEO QUYỀN
         if st.session_state.get("is_admin"):
@@ -746,6 +748,8 @@ def main():
                             user_pass, "User"
                         )
                     )
+                    # Xác định quyền admin ngay khi login
+                    st.session_state.is_admin = pm.is_admin(user_pass)
                     st.rerun()
                 else:
                     st.error("Sai mật khẩu!")
