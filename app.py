@@ -181,75 +181,105 @@ def show_main_app():
 
     # TAB 1: PHÂN TÍCH
     with tab1:
-        st.header("Trợ lý Nghiên cứu RAG & Biểu đồ")
-        col_a, col_b = st.columns([1, 2])
+        st.header("📚 Trợ lý Nghiên cứu RAG")
         
-        with col_a:
-            file_excel = st.file_uploader("1. Kết nối Kho Sách", type="xlsx", key="tab1_excel")
-            uploaded_files = st.file_uploader("2. Tài liệu mới", type=["pdf","docx","txt", "md", "html"], accept_multiple_files=True)
-            if st.button("🚀 PHÂN TÍCH (RAG)", type="primary"):
-                if uploaded_files:
-                    
-                    # --- CHẠY PHÂN TÍCH TÀI LIỆU MỚI (RAG) ---
-                    vec_model = load_models()
-                    db_vec, df = None, None
-                    has_db = False
-                    
-                    if file_excel:
-                        try:
-                            df = pd.read_excel(file_excel).dropna(subset=['Tên sách', 'CẢM NHẬN'])
-                            if not df.empty:
-                                st.info(f"✅ Đã tải {len(df)} sách. Đang số hóa...")
-                                content = [f"{r['Tên sách']} {str(r['CẢM NHẬN'])}" for i,r in df.iterrows()]
-                                db_vec = vec_model.encode(content)
-                                has_db = True
-                        except: st.error("❌ Lỗi đọc file Excel hoặc thiếu cột.")
+        # --- PHẦN 1: UPLOAD & CẤU HÌNH (ĐỂ TRÊN CÙNG) ---
+        with st.container():
+            c1, c2, c3 = st.columns([1, 1, 1])
+            with c1:
+                file_excel = st.file_uploader("1. Kết nối Kho Sách (Excel)", type="xlsx", key="tab1_excel")
+            with c2:
+                uploaded_files = st.file_uploader("2. Tài liệu mới cần đọc", type=["pdf","docx","txt", "md", "html"], accept_multiple_files=True)
+            with c3:
+                st.write("") # Spacer
+                st.write("")
+                btn_run = st.button("🚀 PHÂN TÍCH NGAY", type="primary", use_container_width=True)
 
-                    # Lặp qua từng file mới
-                    for f in uploaded_files:
-                        text = doc_file(f)
-                        lien_ket = ""
-                        
-                        # LOGIC RAG: TÌM KIẾM LIÊN KẾT TRONG KHO SÁCH CŨ
-                        if has_db:
-                            # Chỉ lấy 20.000 ký tự đầu để so sánh Vector cho nhanh
-                            q_vec = vec_model.encode([text[:20000]]) 
-                            scores = cosine_similarity(q_vec, db_vec)[0]
-                            top = np.argsort(scores)[::-1][:3]
-                            for idx in top:
-                                if scores[idx] > 0.40: # Ngưỡng 40% để liên kết
-                                    lien_ket += f"- {df.iloc[idx]['Tên sách']} (Khớp: {scores[idx]*100:.1f}%)\n"
-                        
-                        # CHẠY GEMINI PHÂN TÍCH
-                        prompt = f"Phân tích tài liệu '{f.name}'. Nguồn liên kết cũ: {lien_ket}. Nội dung: {text[:20000]}"
-                        res = model.generate_content(prompt)
-                        st.markdown(f"### 📄 Kết quả: {f.name}\n{res.text}")
-                        luu_lich_su_vinh_vien("Phân Tích", f.name, res.text)
-        
-        # --- [NEW] PHẦN HIỂN THỊ BIỂU ĐỒ (LUÔN CHẠY KHI CÓ EXCEL) ---
-        if file_excel:
-            import plotly.express as px
-            # Phải đọc lại file (hoặc dùng biến df nếu nó đã được định nghĩa ở trên)
-            # Dùng st.session_state để lưu df nếu không nó sẽ bị mất
-            if 'df_kho_sach' not in st.session_state and 'df' in locals():
-                st.session_state.df_kho_sach = df
-            
-            if 'df_kho_sach' in st.session_state:
-                df_viz = st.session_state.df_kho_sach
+        st.divider() # Đường kẻ ngang phân cách
+
+        # --- PHẦN 2: XỬ LÝ & HIỂN THỊ (TRÀN MÀN HÌNH) ---
+        if btn_run and uploaded_files:
+            # Load Model
+            with st.spinner("Đang khởi động bộ não Vector..."):
+                vec_model = load_models()
+                db_vec, df = None, None
+                has_db = False
                 
-                with st.expander("📊 Thống Kê & Bản Đồ Kho Sách", expanded=True):
-                    # 1. Biểu đồ Top Tác giả
-                    if 'Tác giả' in df_viz.columns:
-                        top_authors = df_viz['Tác giả'].value_counts().head(10).reset_index()
-                        top_authors.columns = ['Tác giả', 'Số lượng']
-                        fig2 = px.bar(top_authors, x='Tác giả', y='Số lượng', title='Top 10 Tác giả Chị đọc nhiều nhất')
-                        st.plotly_chart(fig2, use_container_width=True)
+                # Xử lý Excel
+                if file_excel:
+                    try:
+                        df = pd.read_excel(file_excel).dropna(subset=['Tên sách'])
+                        if not df.empty:
+                            content = [f"{r['Tên sách']} {str(r['CẢM NHẬN'])}" for i,r in df.iterrows()]
+                            db_vec = vec_model.encode(content)
+                            has_db = True
+                            st.success(f"✅ Đã kết nối {len(df)} cuốn sách từ kho dữ liệu.")
+                    except: st.error("❌ Lỗi đọc file Excel.")
+
+            # Chạy từng file
+            for f in uploaded_files:
+                with st.status(f"🤖 Đang đọc và phân tích: {f.name}...", expanded=True) as status:
+                    text = doc_file(f)
+                    st.write(f"Đã đọc {len(text)} ký tự.")
                     
-                    # 2. Biểu đồ Phân bố Review (Dựa trên độ dài review)
-                    if 'CẢM NHẬN' in df_viz.columns:
-                        df_viz['Độ sâu Review'] = df_viz['CẢM NHẬN'].apply(lambda x: 'Sâu (Dài)' if len(str(x))>100 else 'Ngắn (Sơ lược)')
-                        fig1 = px.pie(df_viz, names='Độ sâu Review', title='Phân bố độ sâu Review', hole=0.3)
-                        st.plotly_chart(fig1, use_container_width=True)
+                    lien_ket = ""
+                    # RAG Logic
+                    if has_db:
+                        st.write("Đang tìm liên kết trong kho sách cũ...")
+                        q_vec = vec_model.encode([text[:20000]]) 
+                        scores = cosine_similarity(q_vec, db_vec)[0]
+                        top = np.argsort(scores)[::-1][:3]
+                        for idx in top:
+                            if scores[idx] > 0.40:
+                                lien_ket += f"- {df.iloc[idx]['Tên sách']} (Khớp: {scores[idx]*100:.1f}%)\n"
+                    
+                    # Gemini
+                    st.write("Đang viết báo cáo...")
+                    prompt = f"Phân tích tài liệu '{f.name}'. Nguồn liên kết cũ: {lien_ket}. Nội dung: {text[:20000]}"
+                    res = model.generate_content(prompt)
+                    
+                    status.update(label="✅ Hoàn tất!", state="complete", expanded=False)
+
+                # HIỂN THỊ KẾT QUẢ (FULL WIDTH)
+                st.markdown(f"### 📄 Kết quả: {f.name}")
+                st.markdown(res.text)
+                st.markdown("---")
+                
+                # Lưu lịch sử
+                luu_lich_su_vinh_vien("Phân Tích", f.name, res.text)
+
+        # --- PHẦN 3: BIỂU ĐỒ (HIỆN LUÔN KHÔNG CẦN BẤM) ---
+        if file_excel:
+            try:
+                # Đọc lại file để vẽ (nếu chưa có trong session)
+                if 'df_viz' not in st.session_state:
+                    st.session_state.df_viz = pd.read_excel(file_excel).dropna(subset=['Tên sách'])
+                
+                df_v = st.session_state.df_viz
+                
+                st.subheader("📊 Bản Đồ Kho Sách Của Chị")
+                import plotly.express as px
+                
+                # Chia 2 cột cho biểu đồ
+                g1, g2 = st.columns(2)
+                
+                with g1:
+                    # Biểu đồ Tác giả
+                    if 'Tác giả' in df_v.columns:
+                        top_auth = df_v['Tác giả'].value_counts().head(10).reset_index()
+                        top_auth.columns = ['Tác giả', 'Số lượng']
+                        fig = px.bar(top_auth, x='Số lượng', y='Tác giả', orientation='h', title="Top Tác giả yêu thích")
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                with g2:
+                    # Biểu đồ Review (Giả lập độ sâu)
+                    if 'CẢM NHẬN' in df_v.columns:
+                        df_v['Độ dài'] = df_v['CẢM NHẬN'].apply(lambda x: len(str(x)))
+                        fig2 = px.histogram(df_v, x='Độ dài', title="Phân bố độ sâu Review (Độ dài chữ)")
+                        st.plotly_chart(fig2, use_container_width=True)
+                        
+            except Exception as e:
+                st.warning(f"Chưa thể vẽ biểu đồ: {e}")
 
     # TAB 2
     with tab2:
