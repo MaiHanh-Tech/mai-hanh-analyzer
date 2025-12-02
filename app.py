@@ -13,6 +13,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import plotly.express as px
 import markdown 
+import edge_tts
+import asyncio
 
 # --- 1. CẤU HÌNH TRANG ---
 st.set_page_config(page_title="Mai Hanh Super App", layout="wide", page_icon="💎")
@@ -116,7 +118,27 @@ def doc_file(uploaded_file):
             return soup.get_text()
     except: return ""
     return ""
+    
+# Hàm tạo Audio từ Text dùng Edge TTS (Nam Minh)
+async def generate_audio_edge(text, voice="vi-VN-NamMinhNeural", output_file="output_audio.mp3"):
+    communicate = edge_tts.Communicate(text, voice)
+    await communicate.save(output_file)
+    return output_file
 
+# Wrapper để chạy hàm async trong Streamlit
+def run_tts(text, voice_key):
+    # Mapping tên giọng sang mã
+    voices = {
+        "Nam Minh (Nam - Trầm ấm)": "vi-VN-NamMinhNeural",
+        "Hoài My (Nữ - Ngọt ngào)": "vi-VN-HoaiMyNeural"
+    }
+    selected_voice = voices.get(voice_key, "vi-VN-NamMinhNeural")
+    
+    # Chạy async
+    output = "tts_output.mp3"
+    asyncio.run(generate_audio_edge(text, selected_voice, output))
+    return output
+    
 # --- 5. GIAO DIỆN CHÍNH ---
 def show_main_app():
     # Load history
@@ -152,7 +174,7 @@ def show_main_app():
             st.rerun()
 
     st.title("💎 The Mai Hanh Super-App")
-    tab1, tab2, tab3, tab4 = st.tabs(["📚 Phân Tích Sách", "✍️ Dịch Giả", "🗣️ Tranh Biện", "⏳ Lịch Sử"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📚 Phân Tích Sách", "✍️ Dịch Giả", "🗣️ Tranh Biện", "🎙️ Phòng Thu AI", "⏳ Lịch Sử"])
 
     # === TAB 1: PHÂN TÍCH SÁCH ===
     with tab1:
@@ -303,8 +325,48 @@ def show_main_app():
             st.chat_message("assistant").markdown(res.text)
             st.session_state.chat_history.append({"role":"assistant", "content":res.text})
 
-    # === TAB 4: LỊCH SỬ ===
+    # === TAB 4: PHÒNG THU AI (MỚI THÊM) ===
     with tab4:
+        st.header("🎙️ Phòng Thu AI (Edge TTS Miễn Phí)")
+        
+        c_text, c_opt = st.columns([3, 1])
+        with c_text:
+            tts_input = st.text_area("Nhập văn bản muốn đọc:", height=150, placeholder="Nhập tiếng Việt vào đây để Nam Minh đọc...")
+        
+        with c_opt:
+            voice_choice = st.selectbox(
+                "Chọn Giọng Đọc:",
+                ["Nam Minh (Nam - Trầm ấm)", "Hoài My (Nữ - Ngọt ngào)"]
+            )
+            st.write("")
+            btn_speak = st.button("🔊 Đọc Ngay", type="primary", use_container_width=True)
+        
+        if btn_speak and tts_input:
+            with st.spinner("Đang thu âm..."):
+                try:
+                    # Gọi hàm tạo audio
+                    audio_file = run_tts(tts_input, voice_choice)
+                    
+                    # Hiện thanh phát nhạc
+                    st.success("✅ Đã tạo xong!")
+                    st.audio(audio_file, format="audio/mp3")
+                    
+                    # Nút tải về
+                    with open(audio_file, "rb") as f:
+                        st.download_button(
+                            label="⬇️ Tải file MP3",
+                            data=f,
+                            file_name="voice_output.mp3",
+                            mime="audio/mpeg"
+                        )
+                    
+                    luu_lich_su_vinh_vien("Tạo Giọng Nói", f"Giọng: {voice_choice}", tts_input[:50] + "...")
+                    
+                except Exception as e:
+                    st.error(f"Lỗi: {str(e)}")
+
+    # === TAB 5: LỊCH SỬ ===
+    with tab5:
         st.header("Kho Lưu Trữ (Google Sheets)")
         if st.button("🔄 Tải lại Lịch sử"):
             st.session_state.history = tai_lich_su_tu_sheet()
