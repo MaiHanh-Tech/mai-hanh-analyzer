@@ -129,8 +129,13 @@ async def generate_audio_edge(text, voice="vi-VN-NamMinhNeural", output_file="ou
 def run_tts(text, voice_key):
     # Mapping tên giọng sang mã
     voices = {
-        "Nam Minh (Nam - Trầm ấm)": "vi-VN-NamMinhNeural",
-        "Hoài My (Nữ - Ngọt ngào)": "vi-VN-HoaiMyNeural"
+        "🇻🇳 Việt - Nam (Nam Minh - Trầm ấm)": "vi-VN-NamMinhNeural",
+        "🇻🇳 Việt - Nữ (Hoài My - Ngọt ngào)": "vi-VN-HoaiMyNeural",
+        "🇺🇸 Anh - Nam (Andrew - Trầm, Lịch lãm)": "en-US-AndrewMultilingualNeural",
+        "🇺🇸 Anh - Nữ (Emma - Tự nhiên, Thanh toát)": "en-US-EmmaNeural",
+        "🇨🇳 Trung - Nam (Yunjian - Trầm ổn, Tự nhiên)": "zh-CN-YunjianNeural",
+        "🇨🇳 Trung - Nữ (Xiaoyi - Ấm áp, Ngọt ngào)": "zh-CN-XiaoyiNeural"
+        
     }
     selected_voice = voices.get(voice_key, "vi-VN-NamMinhNeural")
     
@@ -325,7 +330,6 @@ def show_main_app():
             st.chat_message("assistant").markdown(res.text)
             st.session_state.chat_history.append({"role":"assistant", "content":res.text})
 
-    # === TAB 4: PHÒNG THU AI (MỚI THÊM) ===
     # === TAB 4: PHÒNG THU AI QUỐC TẾ (NÂNG CẤP) ===
     with tab4:
         st.header("🎙️ Phòng Thu AI Đa Ngôn Ngữ")
