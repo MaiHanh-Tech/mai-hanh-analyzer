@@ -336,7 +336,7 @@ def show_main_app():
         with c_opt:
             voice_choice = st.selectbox(
                 "Chọn Giọng Đọc:",
-                ["Nam Minh (Nam - Trầm ấm)", "Hoài My (Nữ - Ngọt ngào)"]
+                ["Nam Minh (Nam - Trầm ấm)", "Hoài My (Nữ - Ngọt ngào)","Yụnian", "Xiaoyi", "Emma", "AndrewMultilingual"]
             )
             st.write("")
             btn_speak = st.button("🔊 Đọc Ngay", type="primary", use_container_width=True)
