@@ -15,3 +15,4 @@ markdown
 edge-tts
 streamlit-agraph
 networkx
+google-auth
