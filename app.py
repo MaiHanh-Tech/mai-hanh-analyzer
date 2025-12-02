@@ -281,7 +281,8 @@ def show_main_app():
             except Exception as e:
                 st.warning(f"Chưa thể vẽ biểu đồ: {e}")
 
-    # TAB 2
+     # TAB 2: DỊCH GIẢ (TỰ ĐỘNG)
+    # TAB 2: DỊCH GIẢ
     with tab2:
         st.header("Dịch Thuật Đa Chiều")
         c1, c2 = st.columns(2)
@@ -303,6 +304,7 @@ def show_main_app():
                     luu_lich_su("Dịch Thuật", txt_in[:20], res.text)
                     # LƯU VĨNH VIỄN
                     luu_lich_su_vinh_vien("Dịch Thuật", txt_in[:20], res.text)
+
 
 
     # TAB 3
