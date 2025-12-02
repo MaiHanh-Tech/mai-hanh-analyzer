@@ -286,13 +286,24 @@ def show_main_app():
         st.header("Dịch Thuật Đa Chiều")
         c1, c2 = st.columns(2)
         with c1:
+            txt_in = st.text_area("Nhập văn bản (Việt/Anh/Trung):", height=200)
             txt_in = st.text_area("Nhập văn bản:", height=200)
             if st.button("Dịch Ngay"):
                 with st.spinner("Đang xử lý..."):
-                    prompt = f"Dịch và phân tích (Việt/Anh/Trung) văn bản: '{txt_in}'"
+                    prompt = f"""
+                    Bạn là Chuyên gia Ngôn ngữ. Xử lý văn bản: "{txt_in}"
+                    Logic:
+                    - Nếu là Tiếng Việt -> Dịch sang Anh & Trung (kèm Pinyin).
+                    - Nếu là Ngoại ngữ -> Dịch sang Tiếng Việt (Văn phong hay).
+                    - Phân tích 3 từ vựng hay nhất.
+                    """
+                    prompt = f"Dịch và phân tích (Việt/Anh/Trung) cho văn bản: '{txt_in}'"
                     res = model.generate_content(prompt)
                     with c2: st.markdown(res.text)
+                    luu_lich_su("Dịch Thuật", txt_in[:20], res.text)
+                    # LƯU VĨNH VIỄN
                     luu_lich_su_vinh_vien("Dịch Thuật", txt_in[:20], res.text)
+
 
     # TAB 3
     with tab3:
