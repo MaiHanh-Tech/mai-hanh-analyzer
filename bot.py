@@ -20,7 +20,7 @@ logging.basicConfig(
 
 # --- KẾT NỐI NÃO BỘ ---
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-pro')
 
 # Lưu lịch sử chat tạm thời trong RAM
 chat_history = {}
@@ -35,7 +35,7 @@ VOICE_MAPPING = {
 
 # --- HÀM XỬ LÝ ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Chào Chị Hạnh! Em là VietMaiAI đây ạ. Em đã lên mây rồi!")
+    await update.message.reply_text("Chào Chị Hạnh! Em là VietMaiAI2.0 đây ạ. Em đã lên mây rồi!")
 
 async def chat_with_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
