@@ -18,4 +18,4 @@ networkx
 google-auth
 python-telegram-bot  
 langdetect          
-nest_asyncio
+
