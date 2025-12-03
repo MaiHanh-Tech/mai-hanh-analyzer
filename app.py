@@ -575,27 +575,85 @@ def show_main_app():
                     "Dịch Thuật", f"{style_opt}: {txt_in[:20]}...", res.text
                 )
 
-    # === TAB 3: TRANH BIỆN ===
+    # === TAB 3: TRANH BIỆN ĐA NHÂN CÁCH (NÂNG CẤP) ===
     with tab3:
-        st.header("Luyện Tư Duy")
+        st.header("🗣️ Đấu Trường Tư Duy (Debate Arena)")
+        
+        # 1. CẤU HÌNH ĐỐI THỦ
+        col_persona, col_reset = st.columns([3, 1])
+        
+        with col_persona:
+            # Danh sách các "Giáo sư"
+            personas = {
+                "😈 Kẻ Phản Biện (Khó tính)": "Bạn là một nhà phê bình khắc nghiệt. Nhiệm vụ của bạn là tìm ra mọi lỗ hổng logic, sự ngụy biện trong lời nói của người dùng và tấn công vào đó. Không được đồng ý dễ dàng.",
+                "🤔 Socrates (Người hỏi)": "Bạn là Triết gia Socrates. Bạn KHÔNG đưa ra câu trả lời. Bạn chỉ liên tục đặt các câu hỏi sâu sắc (Socratic method) để người dùng tự nhận ra mâu thuẫn trong tư duy của chính họ.",
+                "📈 Nhà Kinh Tế Học (Thực dụng)": "Bạn nhìn mọi vấn đề dưới góc độ Kinh tế: Chi phí cơ hội, Lợi nhuận (ROI), Cung cầu và Động lực (Incentives). Hãy phân tích xem ý tưởng này có 'lời' hay không.",
+                "🚀 Steve Jobs (Tầm nhìn)": "Bạn tập trung vào Sự Đột Phá, Tối giản và Trải nghiệm người dùng. Bạn ghét sự tầm thường. Hãy đòi hỏi người dùng phải nghĩ lớn hơn, khác biệt hơn.",
+                "❤️ Người Tri Kỷ (Đồng cảm)": "Bạn là một người bạn lắng nghe sâu sắc. Hãy tìm những điểm sáng trong ý tưởng của người dùng, khen ngợi họ, và nhẹ nhàng gợi ý cách làm nó tốt hơn. Giọng văn ấm áp, khích lệ."
+            }
+            
+            selected_persona = st.selectbox(
+                "Chọn Đối Thủ Tranh Luận:", 
+                list(personas.keys()),
+                index=0
+            )
+            
+            # Lấy prompt của nhân vật đã chọn
+            persona_prompt = personas[selected_persona]
+
+        with col_reset:
+            st.write("")
+            st.write("")
+            # Nút xóa lịch sử chat để đổi người mới
+            if st.button("🗑️ Xóa Chat", use_container_width=True):
+                st.session_state.chat_history = []
+                st.rerun()
+
+        st.divider()
+
+        # 2. HIỂN THỊ CHAT
         for msg in st.session_state.chat_history:
-            st.chat_message(msg["role"]).markdown(msg["content"])
+            # Chọn Avatar cho sinh động
+            avatar = "👤" if msg["role"] == "user" else "🤖"
+            with st.chat_message(msg["role"], avatar=avatar):
+                st.markdown(msg["content"])
 
-        if query := st.chat_input("Chủ đề tranh luận..."):
-            st.chat_message("user").markdown(query)
-            st.session_state.chat_history.append(
-                {"role": "user", "content": query}
-            )
+        # 3. XỬ LÝ HỘI THOẠI
+        if query := st.chat_input("Nhập quan điểm của Chị vào đây..."):
+            # Hiển thị câu hỏi user
+            st.chat_message("user", avatar="👤").markdown(query)
+            st.session_state.chat_history.append({"role": "user", "content": query})
 
-            prompt = f"Phản biện lại quan điểm này: '{query}'"
-            res = model.generate_content(prompt)
-
-            st.chat_message("assistant").markdown(res.text)
-            st.session_state.chat_history.append(
-                {"role": "assistant", "content": res.text}
-            )
-
-            luu_lich_su_vinh_vien("Tranh Biện", query, res.text)
+            # AI Trả lời
+            with st.chat_message("assistant", avatar="🤖"):
+                with st.spinner(f"{selected_persona} đang suy nghĩ..."):
+                    
+                    # Gửi kèm lịch sử để nhớ ngữ cảnh
+                    history_context = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.chat_history[-5:]])
+                    
+                    full_prompt = f"""
+                    VAI TRÒ CỦA BẠN: {persona_prompt}
+                    
+                    LỊCH SỬ CHAT:
+                    {history_context}
+                    
+                    NGƯỜI DÙNG VỪA NÓI: "{query}"
+                    
+                    HÃY TRẢ LỜI THEO ĐÚNG VAI TRÒ ĐÃ CHỌN. Ngắn gọn, sắc sảo.
+                    """
+                    
+                    try:
+                        res = model.generate_content(full_prompt)
+                        st.markdown(res.text)
+                        
+                        # Lưu vào RAM
+                        st.session_state.chat_history.append({"role": "assistant", "content": res.text})
+                        
+                        # Lưu vào Cloud (Chỉ lưu câu hỏi và câu trả lời mới nhất để đỡ rối)
+                        luu_lich_su_vinh_vien("Tranh Biện", f"Vs {selected_persona}", f"Q: {query}\n\nA: {res.text}")
+                        
+                    except Exception as e:
+                        st.error(f"Lỗi AI: {e}")
 
     # === TAB 4: PHÒNG THU AI (EDGE TTS) ===
     with tab4:
