@@ -24,7 +24,10 @@ if GOOGLE_API_KEY:
 else:
     print("⚠️ CHÚ Ý: Chưa thấy GOOGLE_API_KEY!")
 
-chat_history = {}
+chat_history[chat_id] = model_flash.start_chat(history=[
+    {"role": "user", "parts": "Bạn là một chuyên gia phân tích dữ liệu, trả lời ngắn gọn, khách quan, không dùng từ ngữ cảm xúc."},
+    {"role": "model", "parts": "Dạ, em chào Chị Hạnh ạ!"}
+])
 
 # --- [MỚI] 1. HÀM XỬ LÝ WEB (ĐÁNH LỪA RENDER) ---
 class HealthCheckHandler(BaseHTTPRequestHandler):
