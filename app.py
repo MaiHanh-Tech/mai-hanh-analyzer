@@ -30,7 +30,7 @@ st.set_page_config(page_title="🕸️ The Cognitive Weaver", layout="wide", pag
 # ==========================================
 TRANS = {
     "vi": {
-        "title": "🕸️ The Cognitive Weaver (Người Dệt Nhận Thức)",
+        "title": "🕸️ Người Dệt Nhận Thức",
         "login_title": "🔐 Đăng Nhập Hệ Thống",
         "login_btn": "Đăng Nhập",
         "pass_placeholder": "Nhập mật khẩu truy cập...",
