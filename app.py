@@ -18,16 +18,19 @@ import asyncio
 import json
 import re
 from streamlit_agraph import agraph, Node, Edge, Config
+import sys
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # --- 1. CẤU HÌNH TRANG ---
-st.set_page_config(page_title="Mai Hanh Super App", layout="wide", page_icon="💎")
+st.set_page_config(page_title="🕸️ The Cognitive Weaver", layout="wide", page_icon="💎")
 
 # ==========================================
 # 🌍 BỘ TỪ ĐIỂN ĐA NGÔN NGỮ (I18N)
 # ==========================================
 TRANS = {
     "vi": {
-        "title": "💎 The Cognitive Weaver App",
+        "title": "🕸️ The Cognitive Weaver (Người Dệt Nhận Thức)",
         "login_title": "🔐 Đăng Nhập Hệ Thống",
         "login_btn": "Đăng Nhập",
         "pass_placeholder": "Nhập mật khẩu truy cập...",
@@ -75,7 +78,7 @@ TRANS = {
         "t5_chart": "📈 Biểu đồ Cảm xúc",
     },
     "en": {
-        "title": "💎 The Mai Hanh Super-App",
+        "title": "🕸️ The Cognitive Weaver",
         "login_title": "🔐 System Login",
         "login_btn": "Login",
         "pass_placeholder": "Enter password...",
@@ -123,7 +126,7 @@ TRANS = {
         "t5_chart": "📈 Emotion Chart",
     },
     "zh": {
-        "title": "💎 梅杏超级应用",
+        "title": "🕸️ 认知编织者 (The Cognitive Weaver)",
         "login_title": "🔐 系统登录",
         "login_btn": "登录",
         "pass_placeholder": "请输入密码...",
