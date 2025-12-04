@@ -386,25 +386,80 @@ def show_main_app():
                     st.markdown(f"### 📄 {f.name}"); st.markdown(res.text); st.markdown("---")
                     luu_lich_su_vinh_vien("Phân Tích Sách", f.name, res.text)
 
-        # Graph
+        # --- VISUALIZATION & GRAPH (NÂNG CẤP XỬ LÝ 1000+ SÁCH) ---
         if file_excel:
             try:
-                if "df_viz" not in st.session_state: st.session_state.df_viz = pd.read_excel(file_excel).dropna(subset=["Tên sách"])
+                if "df_viz" not in st.session_state:
+                    st.session_state.df_viz = pd.read_excel(file_excel).dropna(subset=["Tên sách"])
                 df_v = st.session_state.df_viz
-                st.subheader(T("t1_graph_title"))
-                vec = load_models()
-                if "book_embs" not in st.session_state:
-                    st.session_state.book_embs = vec.encode(df_v["Tên sách"].tolist())
                 
+                # Tính toán Vector (Chỉ làm 1 lần)
+                vec_model = load_models()
+                if "book_embs" not in st.session_state:
+                    with st.spinner(f"Đang số hóa {len(df_v)} cuốn sách..."):
+                        contents = [f"{r['Tên sách']} {str(r.get('CẢM NHẬN',''))}" for _, r in df_v.iterrows()]
+                        st.session_state.book_embs = vec_model.encode(contents)
+                        st.session_state.book_titles = df_v["Tên sách"].tolist()
+
                 embs = st.session_state.book_embs
-                sim = cosine_similarity(embs)
-                nodes, edges = [], []
-                for i in range(min(len(df_v), 20)):
-                    nodes.append(Node(id=str(i), label=df_v.iloc[i]["Tên sách"], size=25, color="#FFD166"))
-                    for j in range(i+1, min(len(df_v), 20)):
-                        if sim[i,j]>0.4: edges.append(Edge(source=str(i), target=str(j), color="#118AB2"))
-                agraph(nodes, edges, Config(width=900, height=600, directed=False, physics=True, collapsible=False))
-            except: pass
+                titles = st.session_state.book_titles
+                total_books = len(titles)
+
+                st.divider()
+                st.subheader(f"🪐 Vũ Trụ Tri Thức ({total_books} cuốn)")
+                
+                # --- LỰA CHỌN CHẾ ĐỘ XEM ---
+                view_mode = st.radio("Chọn chế độ hiển thị:", 
+                                     ["🌌 Bản Đồ Sao (Scatter - Tốt cho >100 sách)", 
+                                      "🕸️ Mạng Lưới (Network - Tốt cho <100 sách)"], 
+                                     horizontal=True)
+
+                # CHẾ ĐỘ 1: BẢN ĐỒ SAO (SCATTER PLOT) - XỬ LÝ ĐƯỢC 1000+ SÁCH
+                if "Scatter" in view_mode:
+                    from sklearn.decomposition import PCA
+                    
+                    # Giảm chiều dữ liệu từ 384 -> 2 chiều để vẽ
+                    pca = PCA(n_components=2)
+                    coords = pca.fit_transform(embs)
+                    
+                    # Tạo Dataframe cho biểu đồ
+                    df_plot = pd.DataFrame(coords, columns=['x', 'y'])
+                    df_plot['Tên sách'] = titles
+                    df_plot['Tác giả'] = df_v['Tác giả'].tolist() if 'Tác giả' in df_v.columns else ["Unknown"]*len(titles)
+                    
+                    fig = px.scatter(
+                        df_plot, x='x', y='y', 
+                        hover_name='Tên sách', color='Tác giả',
+                        title=f"Bản đồ tư duy {total_books} cuốn sách",
+                        height=700
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                    st.info("💡 Mẹo: Các chấm đứng gần nhau là các sách có nội dung tương đồng. Rê chuột vào để xem tên.")
+
+                # CHẾ ĐỘ 2: MẠNG LƯỚI (NETWORK) - CŨ NHƯNG MỞ KHÓA LIMIT
+                else:
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        # MỞ KHÓA: Max value là tổng số sách chị có
+                        max_nodes = st.slider("Số lượng hiển thị:", 5, total_books, min(50, total_books))
+                    with c2:
+                        threshold = st.slider("Độ tương đồng nối dây:", 0.0, 1.0, 0.45)
+
+                    sim_matrix = cosine_similarity(embs)
+                    nodes, edges = [], []
+                    
+                    # Chỉ lấy số lượng sách theo Slider
+                    for i in range(max_nodes):
+                        nodes.append(Node(id=str(i), label=titles[i], size=20, color="#FFD166"))
+                        for j in range(i+1, max_nodes):
+                            if sim_matrix[i,j] > threshold:
+                                edges.append(Edge(source=str(i), target=str(j), color="#118AB2"))
+
+                    config = Config(width=900, height=600, directed=False, physics=True, collapsible=False)
+                    agraph(nodes, edges, config)
+
+            except Exception as e:
+                st.warning(f"Đang xử lý dữ liệu biểu đồ... ({e})")
 
     # TAB 2: DỊCH
     with tab2:
