@@ -537,7 +537,7 @@ def show_main_app():
             except: pass
 
             for item in reversed(st.session_state.history):
-                user_tag = f"👤 [{item.get('user')}] " if st.session_state.is_admin else ""
+                user_tag = f"👤 [{item.get('user')}] " if st.session_state.get('is_admin', False) else ""
                 with st.expander(f"⏰ {item['time']} | {user_tag}{item['type']} | {item['title']}"):
                     st.markdown(item['content'])
         else:
