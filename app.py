@@ -478,37 +478,120 @@ def show_main_app():
                 
                 luu_lich_su_vinh_vien("Dịch Thuật", f"{target_lang}: {txt[:20]}...", res.text)
 
-    # TAB 3: TRANH BIỆN
+   # === TAB 3: ĐẤU TRƯỜNG TƯ DUY (MULTI-AGENT ARENA) ===
     with tab3:
-        st.header(T("t3_header"))
-        # Chọn Persona
-        personas = {
-	        "😈 Immanuel Kant (The Rationalist)": "Lý tính thuần túy. Tư duy: Đề cao quy luật, nghĩa vụ, và sự kiểm soát cảm xúc. Phản ứng: Điềm tĩnh, phân tích.",
-            "😉 Friedrich Nietzsche (The Vitalist)": "Ý chí quyền lực và bản năng sống mãnh liệt. Tư duy: Phá vỡ quy tắc, chê bai sự yếu đuối. Phản ứng: Khiêu khích, thơ ca, đầy lửa.",
-            "❤️ Phật Tổ (The Awakened One)": "Bạn là Đức Phật (không tôn giáo). Nhìn mọi vấn đề dưới lăng kính Vô ngã, Duyên khởi, Vô thường. Phản ứng: Từ bi, giải cấu trúc sự chấp trước.",
-            "😈 Devil's Advocate": "Nhà phê bình khắc nghiệt/Critical critic",
-            "🤔 Socrates": "Triết gia Socrates (chỉ hỏi/only ask)",
-            "📈 Economist": "Nhà kinh tế học/Economist",
-            "🚀 Steve Jobs": "Tầm nhìn đột phá/Visionary",
-            "❤️ Empath": "Người tri kỷ/Empathetic friend"
-        }
+        st.header("🗣️ Đấu Trường Tư Duy & Hội Đồng Triết Gia")
         
-        col_p, col_c = st.columns([3,1])
-        with col_p: p_sel = st.selectbox(T("t3_persona_label"), list(personas.keys()))
-        with col_c: 
-            st.write(""); st.write("")
-            if st.button(T("t3_clear"), use_container_width=True): st.session_state.chat_history = []; st.rerun()
+        # 1. DANH SÁCH NHÂN VẬT (ĐÃ CẬP NHẬT 3 ÔNG MỚI)
+        personas = {
+            "😈 Devil's Advocate": "Nhà phê bình khắc nghiệt. Luôn tìm lỗ hổng logic để tấn công.",
+            "🤔 Socrates": "Triết gia Socrates. Chỉ đặt câu hỏi (Socratic method) để khơi gợi mâu thuẫn.",
+            "📈 Economist": "Nhà kinh tế học. Nhìn mọi thứ qua Chi phí, Lợi nhuận, Động lực và Thị trường.",
+            "🚀 Steve Jobs": "Tầm nhìn đột phá. Ghét sự tầm thường, đòi hỏi sự hoàn hảo và trải nghiệm.",
+            "❤️ Empath": "Người tri kỷ. Lắng nghe, đồng cảm và ủng hộ cảm xúc.",
+            # --- 3 NHÂN VẬT MỚI ---
+            "⚖️ Immanuel Kant": "Triết gia Lý tính. Đề cao Đạo đức nghĩa vụ, Quy luật phổ quát. Phản ứng: Điềm tĩnh, logic chặt chẽ, khô khan.",
+            "🔥 Nietzsche": "Triết gia Sinh mệnh. Đề cao Ý chí quyền lực, Siêu nhân. Phản ứng: Khiêu khích, đầy lửa, coi thường sự yếu đuối và đạo đức bầy đàn.",
+            "🙏 Phật Tổ": "Đức Phật (Góc nhìn Triết học). Nhìn qua lăng kính Vô ngã, Duyên khởi, Vô thường. Phản ứng: Từ bi, phá chấp, giải cấu trúc cái Tôi."
+        }
 
-        for m in st.session_state.chat_history: st.chat_message(m["role"]).markdown(m["content"])
-        if q := st.chat_input(T("t3_input")):
-            st.chat_message("user").markdown(q)
-            st.session_state.chat_history.append({"role":"user", "content":q})
+        # 2. CHỌN CHẾ ĐỘ CHƠI
+        mode = st.radio("Chọn chế độ:", ["👤 Đấu Solo (Chị vs AI)", "⚔️ Đại Chiến (AI vs AI)"], horizontal=True)
+        st.divider()
+
+        # --- CHẾ ĐỘ 1: SOLO (GIỮ NGUYÊN CŨ) ---
+        if mode == "👤 Đấu Solo (Chị vs AI)":
+            c1, c2 = st.columns([3, 1])
+            with c1: 
+                p_sel = st.selectbox("Chọn Đối Thủ:", list(personas.keys()))
+            with c2: 
+                st.write(""); st.write("")
+                if st.button("🗑️ Xóa Chat", key="clr_solo"): 
+                    st.session_state.chat_history = []
+                    st.rerun()
+
+            # Hiển thị lịch sử
+            for m in st.session_state.chat_history:
+                st.chat_message(m["role"]).markdown(m["content"])
             
-            full_p = f"Role: {personas[p_sel]}. Language: {st.session_state.lang}. User said: '{q}'."
-            res = model.generate_content(full_p)
-            st.chat_message("assistant").markdown(res.text)
-            st.session_state.chat_history.append({"role":"assistant", "content":res.text})
-            luu_lich_su_vinh_vien("Tranh Biện", f"Vs {p_sel}: {q}", res.text)
+            # Input
+            if q := st.chat_input("Nhập quan điểm của Chị..."):
+                st.chat_message("user").markdown(q)
+                st.session_state.chat_history.append({"role":"user", "content":q})
+                
+                # Logic gọi AI
+                history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.chat_history[-5:]])
+                prompt = f"""
+                VAI TRÒ: {personas[p_sel]}
+                LỊCH SỬ: {history_text}
+                USER NÓI: "{q}"
+                Hãy phản biện ngắn gọn, sắc sảo theo đúng vai trò.
+                """
+                try:
+                    res = model.generate_content(prompt)
+                    st.chat_message("assistant").markdown(res.text)
+                    st.session_state.chat_history.append({"role":"assistant", "content":res.text})
+                    luu_lich_su_vinh_vien("Tranh Biện Solo", f"Vs {p_sel}", q)
+                except Exception as e: st.error(f"Lỗi AI: {e}")
+
+        # --- CHẾ ĐỘ 2: ĐẠI CHIẾN (TÍNH NĂNG MỚI) ---
+        else:
+            st.info("💡 Hướng dẫn: Chọn 2-3 nhân vật, đưa ra 1 chủ đề, và xem họ 'xâu xé' nhau.")
+            
+            # Chọn các đấu thủ
+            participants = st.multiselect("Chọn các thành viên Hội đồng (Tối đa 3):", list(personas.keys()), default=["⚖️ Immanuel Kant", "🔥 Nietzsche"])
+            
+            topic = st.text_input("Chủ đề tranh luận:", placeholder="Ví dụ: Tiền có mua được hạnh phúc không?")
+            
+            if "battle_logs" not in st.session_state: st.session_state.battle_logs = []
+
+            # Nút bắt đầu
+            col_start, col_clear = st.columns([1, 5])
+            with col_start:
+                start_battle = st.button("🔥 KHAI CHIẾN", type="primary")
+            with col_clear:
+                if st.button("🗑️ Xóa Bàn"):
+                    st.session_state.battle_logs = []
+                    st.rerun()
+
+            # Logic chạy vòng lặp tranh luận
+            if start_battle and topic and len(participants) > 1:
+                st.session_state.battle_logs = [] # Reset trận mới
+                st.session_state.battle_logs.append(f"**📢 CHỦ TỌA (Chị Hạnh):** Chúng ta hãy bàn về chủ đề: *'{topic}'*")
+                
+                # Vòng 1: Mỗi người phát biểu 1 câu
+                with st.status("Hội đồng đang tranh luận nảy lửa...") as status:
+                    # Ngữ cảnh chung
+                    context = f"Chủ đề: {topic}."
+                    
+                    for p_name in participants:
+                        st.write(f"💭 {p_name} đang suy nghĩ...")
+                        prompt = f"""
+                        Bạn đang đóng vai: {p_name}. Tính cách: {personas[p_name]}.
+                        Chúng ta đang tranh luận về: "{topic}".
+                        Các ý kiến trước đó:
+                        {context}
+                        
+                        Hãy đưa ra quan điểm của bạn. Nếu có ý kiến trước đó trái ngược với triết lý của bạn, hãy phản bác gay gắt.
+                        Ngắn gọn (dưới 100 từ).
+                        """
+                        res = model.generate_content(prompt)
+                        reply = res.text
+                        
+                        # Lưu vào context để người sau biết người trước nói gì
+                        context += f"\n{p_name}: {reply}"
+                        st.session_state.battle_logs.append(f"**{p_name}:** {reply}")
+                        time.sleep(1) # Nghỉ xíu cho đỡ lag
+                    
+                    status.update(label="✅ Tranh luận kết thúc hiệp 1!", state="complete")
+                    
+                    # Lưu lịch sử
+                    luu_lich_su_vinh_vien("Hội Đồng Tranh Biện", topic, context)
+
+            # Hiển thị kết quả trận đấu
+            for log in st.session_state.battle_logs:
+                st.markdown(log)
+                st.markdown("---")
 
     # TAB 4: TTS (ĐÃ CÓ LẠI GIỌNG NỮ)
     with tab4:
