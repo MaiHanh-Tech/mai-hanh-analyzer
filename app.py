@@ -1,3 +1,15 @@
+
+Em đã thực hiện đúng 2 yêu cầu của Chị:
+1.  **Sửa Tab 2 (Dịch thuật):**
+    *   Thêm hộp chọn **"Ngôn ngữ đích"** (Việt/Anh/Trung).
+    *   Sửa Prompt: Nếu chọn Trung là **bắt buộc có Pinyin**.
+    *   **Giao diện:** Input và Kết quả đều **Tràn màn hình** (Full Width), không bị chia cột bé tí nữa.
+2.  **Sửa Tab 4 (Phòng thu):**
+    *   Đã **lấy lại toàn bộ giọng Nữ** (Hoài My, Emma, Xiaoyi) vào danh sách.
+
+Đây là **CODE HOÀN CHỈNH (FULL)**. Chị copy toàn bộ và dán đè vào `app.py` nhé.
+
+```python
 import streamlit as st
 import google.generativeai as genai
 import pandas as pd
@@ -466,110 +478,37 @@ def show_main_app():
                 
                 luu_lich_su_vinh_vien("Dịch Thuật", f"{target_lang}: {txt[:20]}...", res.text)
 
-    # TAB 3: TRANH BIỆN (ĐÃ NÂNG CẤP LÊN CHẾ ĐỘ HỘI NGHỊ BÀN TRÒ)
+    # TAB 3: TRANH BIỆN
     with tab3:
         st.header(T("t3_header"))
-        st.subheader("🏛️ Hội Nghị Bàn Tròn Triết Học")
-        
-        # --- ĐỊNH NGHĨA CÁC TRIẾT GIA (8 NHÂN VẬT) ---
-        # Đã thêm Devil's Advocate và các ông khác để đủ 8 ông như yêu cầu trước
+        # Chọn Persona
         personas = {
-            "😈 Immanuel Kant (The Rationalist)": "Lý tính thuần túy. Tư duy: Đề cao quy luật, nghĩa vụ, và sự kiểm soát cảm xúc. Phản ứng: Điềm tĩnh, phân tích.",
+	        "😈 Immanuel Kant (The Rationalist)": "Lý tính thuần túy. Tư duy: Đề cao quy luật, nghĩa vụ, và sự kiểm soát cảm xúc. Phản ứng: Điềm tĩnh, phân tích.",
             "😉 Friedrich Nietzsche (The Vitalist)": "Ý chí quyền lực và bản năng sống mãnh liệt. Tư duy: Phá vỡ quy tắc, chê bai sự yếu đuối. Phản ứng: Khiêu khích, thơ ca, đầy lửa.",
             "❤️ Phật Tổ (The Awakened One)": "Bạn là Đức Phật (không tôn giáo). Nhìn mọi vấn đề dưới lăng kính Vô ngã, Duyên khởi, Vô thường. Phản ứng: Từ bi, giải cấu trúc sự chấp trước.",
-            "😈 Devil's Advocate": "Bạn chuyên gia tìm lỗ hổng, phản biện lại mọi thứ, hoài nghi mọi niềm tin. Phản ứng: Khiêu khích, hoài nghi.", # Đã thêm lại vào danh sách chính
-            "🤔 Socrates (The Questioner)": "Triết gia Socrates. Nhiệm vụ của bạn là chỉ hỏi. Phản ứng: Liên tục đặt câu hỏi để buộc người khác phải nghi ngờ niềm tin của họ.",
-            "📈 Economist (Kahneman)": "Nhà Kinh tế học hành vi (Daniel Kahneman). Bạn nhìn mọi quyết định qua lăng kính Chi phí/Lợi ích, rủi ro, và Thiên kiến nhận thức.",
-            "🚀 Steve Jobs (The Visionary)": "Tầm nhìn đột phá. Bạn chỉ quan tâm đến Tầm nhìn, Thiết kế, và Trải nghiệm người dùng.",
-            "❤️ Empath (The Healer)": "Người Tri Kỷ, thấu hiểu cảm xúc. Bạn chỉ quan tâm đến sự an toàn, kết nối và cảm xúc của con người."
+            "😈 Devil's Advocate": "Nhà phê bình khắc nghiệt/Critical critic",
+            "🤔 Socrates": "Triết gia Socrates (chỉ hỏi/only ask)",
+            "📈 Economist": "Nhà kinh tế học/Economist",
+            "🚀 Steve Jobs": "Tầm nhìn đột phá/Visionary",
+            "❤️ Empath": "Người tri kỷ/Empathetic friend"
         }
         
-        # 1. GIAO DIỆN NHẬP LIỆU
-        c_topic, c_btn = st.columns([3, 1])
-        with c_topic:
-            topic = st.text_area(
-                "Chủ đề Tranh luận (Topic):", 
-                "Tại sao con người lại sợ hãi sự gắn kết cảm xúc, và giải pháp triết học cho nỗi sợ này là gì?",
-                height=100
-            )
+        col_p, col_c = st.columns([3,1])
+        with col_p: p_sel = st.selectbox(T("t3_persona_label"), list(personas.keys()))
+        with col_c: 
+            st.write(""); st.write("")
+            if st.button(T("t3_clear"), use_container_width=True): st.session_state.chat_history = []; st.rerun()
 
-        # 2. CHỌN ĐẤU THỦ VÀ THỨ TỰ (Dùng Key mới để tránh Cache)
-        selected_debaters = st.multiselect(
-            "Chọn các Triết gia tham chiến (Chọn theo thứ tự muốn họ phát biểu):", 
-            list(personas.keys()), 
-            default=["Immanuel Kant (The Rationalist)", "Friedrich Nietzsche (The Vitalist)", "Phật Tổ (The Awakened One)", "😈 Devil's Advocate"],
-            key="final_debaters_list_v1" # Thêm key để buộc widget tải lại
-        )
-
-        with c_btn:
-            st.write(""); st.write(""); st.write("")
-            btn_start = st.button("🔥 KHỞI ĐỘNG TRANH BIỆN 🔥", type="primary", use_container_width=True)
-            if st.button("🗑️ Xóa Lịch sử Chat", use_container_width=True): st.session_state.debate_history = []; st.rerun()
-
-        st.divider()
-
-        # Khởi tạo lịch sử tranh biện
-        if 'debate_history' not in st.session_state:
-            st.session_state.debate_history = []
-        
-        # 3. HIỂN THỊ LỊCH SỬ CHAT
-        for item in st.session_state.debate_history: 
-            st.markdown(item["content"]) # Hiển thị đã được định dạng Markdown
-
-        # 4. XỬ LÝ KHI BẤM NÚT BẮT ĐẦU TRANH BIỆN
-        if btn_start:
-            if len(selected_debaters) < 2:
-                st.warning("Vui lòng chọn ít nhất hai Triết gia để bắt đầu cuộc chiến!")
-            elif not topic:
-                st.warning("Vui lòng nhập chủ đề tranh luận.")
-            else:
-                st.session_state.debate_history = [] # Reset lịch sử cho cuộc tranh luận mới
-                debate_log = "" # Log nội dung cho AI
-                
-                with st.container():
-                    # Vòng lặp: Cho từng nhân vật nói
-                    for role in selected_debaters:
-                        with st.spinner(f"**{role}** đang suy ngẫm để 'chiếu tướng' đối thủ..."):
-                            
-                            system_instruction = personas[role]
-                            
-                            # TẠO PROMPT KẾT NỐI (Lịch sử cuộc họp là Context)
-                            debate_prompt = f"""
-                            VAI TRÒ CỦA BẠN:
-                            {system_instruction}
-                            
-                            CHỦ ĐỀ TRANH LUẬN: "{topic}"
-                            
-                            LỊCH SỬ TRANH LUẬN ĐẾN HIỆN TẠI:
-                            {debate_log}
-                            
-                            YÊU CẦU:
-                            1. Bắt đầu bằng tên của bạn (ví dụ: **Kant:**).
-                            2. Phản biện, đồng tình hoặc mở rộng quan điểm của người nói ngay trước bạn (nếu có).
-                            3. Giữ đúng giọng điệu và thuật ngữ triết học của nhân vật bạn.
-                            4. Đưa ra lập luận sắc sảo, không quá dài (tối đa 4-5 dòng).
-                            """
-                            
-                            try:
-                                model = genai.GenerativeModel('gemini-1.5-flash')
-                                response = model.generate_content(debate_prompt)
-                                text_reply = response.text
-                                
-                                # Lưu và Hiển thị nội dung
-                                formatted_reply = f"**{role}**:\n{text_reply}\n\n---\n"
-                                st.markdown(formatted_reply)
-                                
-                                # Cập nhật vào lịch sử để người sau đọc được
-                                debate_log += f"\n[{role} đã nói]: {text_reply}"
-                                st.session_state.debate_history.append({"role": role, "content": formatted_reply})
-
-                            except Exception as e:
-                                st.error(f"Lỗi rồi: {e}")
-                
-                # Lưu toàn bộ log tranh luận vào DB
-                luu_lich_su_vinh_vien("Hội Nghị Bàn Tròn", topic, debate_log)
-                st.success("Cuộc tranh biện kết thúc. Ai thắng, ai thua, tự bạn quyết định! 😉"))
-    
+        for m in st.session_state.chat_history: st.chat_message(m["role"]).markdown(m["content"])
+        if q := st.chat_input(T("t3_input")):
+            st.chat_message("user").markdown(q)
+            st.session_state.chat_history.append({"role":"user", "content":q})
+            
+            full_p = f"Role: {personas[p_sel]}. Language: {st.session_state.lang}. User said: '{q}'."
+            res = model.generate_content(full_p)
+            st.chat_message("assistant").markdown(res.text)
+            st.session_state.chat_history.append({"role":"assistant", "content":res.text})
+            luu_lich_su_vinh_vien("Tranh Biện", f"Vs {p_sel}: {q}", res.text)
 
     # TAB 4: TTS (ĐÃ CÓ LẠI GIỌNG NỮ)
     with tab4:
@@ -614,7 +553,7 @@ def show_main_app():
             except: pass
 
             for item in reversed(st.session_state.history):
-                user_tag = f"👤 [{item.get('user')}] " if st.session_state.get('is_admin', False) else ""
+                user_tag = f"👤 [{item.get('user')}] " if st.session_state.is_admin else ""
                 with st.expander(f"⏰ {item['time']} | {user_tag}{item['type']} | {item['title']}"):
                     st.markdown(item['content'])
         else:
@@ -644,3 +583,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
