@@ -474,7 +474,7 @@ def show_main_app():
         
         # 1. CHỌN CHẾ ĐỘ CHƠI
         # Dùng key='mode_select_tab3' để tránh trùng ID với nơi khác
-        mode = st.radio("Chọn chế độ:", ["👤 Đấu Solo (Chị vs AI)", "⚔️ Đại Chiến (AI vs AI)"], horizontal=True, key="mode_select_tab3")
+        mode = st.radio("Chọn chế độ:", ["👤 Solo (User vs AI)", "⚔️ Debate (AI vs AI)"], horizontal=True, key="mode_select_tab3")
 
         # 1.1. DANH SÁCH NHÂN VẬT 
         personas = {
@@ -491,7 +491,7 @@ def show_main_app():
         st.divider()
 
         # --- CHẾ ĐỘ 1: SOLO (CHỊ vs AI) ---
-        if mode == "👤 Đấu Solo (Chị vs AI)":
+        if mode == "👤 Solo (User vs AI)":
             # Dùng Container để cô lập không gian ID
             with st.container():
                 c1, c2 = st.columns([3, 1])
@@ -529,7 +529,7 @@ def show_main_app():
                         luu_lich_su_vinh_vien("Tranh Biện Solo", f"Vs {p_sel}: {q}", res.text)
                     except Exception as e: st.error(f"Lỗi AI: {e}")
 
-        # --- CHẾ ĐỘ 2: ĐẠI CHIẾN (AI vs AI) ---
+        # --- CHẾ ĐỘ 2: DEBATE (AI vs AI) ---
         else:
             with st.container():
                 st.info("💡 Hướng dẫn: Chọn 2-3 triết gia, đặt chủ đề và xem họ 'đấu võ mồm'.")
