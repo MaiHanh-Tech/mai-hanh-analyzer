@@ -468,12 +468,13 @@ def show_main_app():
                 
                 luu_lich_su_vinh_vien("Dịch Thuật", f"{target_lang}: {txt[:20]}...", res.text)
 
-   # === TAB 3: ĐẤU TRƯỜNG TƯ DUY (MULTI-AGENT ARENA) ===
+  # === TAB 3: ĐẤU TRƯỜNG TƯ DUY (MULTI-AGENT ARENA) ===
     with tab3:
         st.header(T("t3_header"))
         
         # 1. CHỌN CHẾ ĐỘ CHƠI
-        mode = st.radio(f"Chọn chế độ:", ["👤 Đấu Solo", "⚔️ Đại Chiến"], horizontal=True)
+        # Dùng key='mode_select_tab3' để tránh trùng ID với nơi khác
+        mode = st.radio("Chọn chế độ:", ["👤 Đấu Solo (Chị vs AI)", "⚔️ Đại Chiến (AI vs AI)"], horizontal=True, key="mode_select_tab3")
 
         # 1.1. DANH SÁCH NHÂN VẬT 
         personas = {
@@ -489,128 +490,99 @@ def show_main_app():
         
         st.divider()
 
-        # --- CHẾ ĐỘ 1: SOLO (ĐÃ KHÔI PHỤC TÍNH NĂNG PHÂN TÍCH) ---
-        if mode == "👤 Đấu Solo":
-            c1, c2 = st.columns([3, 1])
-            with c1: 
-                p_sel = st.selectbox(T("t3_persona_label"), list(personas.keys()), key="solo_persona")
-            with c2: 
-                st.write(""); st.write("")
-                if st.button(T("t3_clear"), key="clr_solo"): st.session_state.chat_history = []; st.rerun()
+        # --- CHẾ ĐỘ 1: SOLO (CHỊ vs AI) ---
+        if mode == "👤 Đấu Solo (Chị vs AI)":
+            # Dùng Container để cô lập không gian ID
+            with st.container():
+                c1, c2 = st.columns([3, 1])
+                with c1: 
+                    p_sel = st.selectbox(T("t3_persona_label"), list(personas.keys()), key="solo_persona_select")
+                with c2: 
+                    st.write(""); st.write("")
+                    if st.button(T("t3_clear"), key="btn_clr_solo"): 
+                        st.session_state.chat_history = []
+                        st.rerun()
 
-            # Hiển thị lịch sử
-            for m in st.session_state.chat_history:
-                st.chat_message(m["role"]).markdown(m["content"])
-            
-            # Input
-            if q := st.chat_input(T("t3_input")):
-                st.chat_message("user").markdown(q)
-                st.session_state.chat_history.append({"role":"user", "content":q})
+                # Hiển thị lịch sử chat
+                for m in st.session_state.chat_history:
+                    st.chat_message(m["role"]).markdown(m["content"])
                 
-                # Logic gọi AI - Gửi cả lịch sử và thêm tính năng Phân tích sâu
-                history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.chat_history[-5:]])
-                prompt = f"""
-                VAI TRÒ CỦA BẠN: {personas[p_sel]}
-                LỊCH SỬ CHAT: {history_text}
-                
-                NGƯỜI DÙNG NÓI: "{q}"
-                
-                YÊU CẦU: Phân tích sâu, phản biện sắc sảo, và trả lời bằng ngôn ngữ của người dùng (tự động nhận diện).
-                """
-                
-                try:
-                    res = model.generate_content(prompt)
-                    st.chat_message("assistant").markdown(res.text)
-                    st.session_state.chat_history.append({"role":"assistant", "content":res.text})
-                    luu_lich_su_vinh_vien("Tranh Biện Solo", f"Vs {p_sel}", q)
-                except Exception as e: st.error(f"Lỗi AI: {e}")
-                
-# --- CHẾ ĐỘ 1: SOLO (ĐÃ SỬA) ---
-        if mode == "👤 Đấu Solo":
-            # ... (Phần code trên giữ nguyên) ...
-            
-            # Input
-            if q := st.chat_input(T("t3_input")):
-                st.chat_message("user").markdown(q)
-                st.session_state.chat_history.append({"role":"user", "content":q})
-                
-                # Logic gọi AI
-                # ... (code gọi AI giữ nguyên) ...
-                
-                try:
-                    res = model.generate_content(prompt)
-                    st.chat_message("assistant").markdown(res.text)
-                    st.session_state.chat_history.append({"role":"assistant", "content":res.text})
+                # Input Chat (Key duy nhất)
+                if q := st.chat_input(T("t3_input"), key="chat_input_solo"):
+                    st.chat_message("user").markdown(q)
+                    st.session_state.chat_history.append({"role":"user", "content":q})
                     
-                    # <<< DÒNG CODE CẦN THÊM ĐỂ LƯU VĨNH VIỄN >>>
-                    luu_lich_su_vinh_vien("Tranh Biện Solo", f"Vs {p_sel}: {q}", res.text) 
-                    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                    # Logic gọi AI
+                    history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.chat_history[-5:]])
+                    prompt = f"""
+                    VAI TRÒ CỦA BẠN: {personas[p_sel]}
+                    LỊCH SỬ CHAT: {history_text}
+                    NGƯỜI DÙNG NÓI: "{q}"
+                    YÊU CẦU: Phân tích sâu, phản biện sắc sảo, và trả lời bằng ngôn ngữ của người dùng.
+                    """
                     
-                except Exception as e: st.error(f"Lỗi AI: {e}")
-                
-        # --- CHẾ ĐỘ 2: ĐẠI CHIẾN (ĐÃ TĂNG VÒNG LẶP LÊN 3) ---
+                    try:
+                        res = model.generate_content(prompt)
+                        st.chat_message("assistant").markdown(res.text)
+                        st.session_state.chat_history.append({"role":"assistant", "content":res.text})
+                        # Lưu lịch sử vĩnh viễn
+                        luu_lich_su_vinh_vien("Tranh Biện Solo", f"Vs {p_sel}: {q}", res.text)
+                    except Exception as e: st.error(f"Lỗi AI: {e}")
+
+        # --- CHẾ ĐỘ 2: ĐẠI CHIẾN (AI vs AI) ---
         else:
-            st.info("💡 Hướng dẫn: Chọn 2-3 triết gia, đặt chủ đề và xem họ 'đấu võ mồm'.")
-            
-            participants = st.multiselect("Chọn các Đấu Thủ (Tối đa 3):", list(personas.keys()), default=["⚖️ Immanuel Kant", "🔥 Nietzsche"])
-            topic = st.text_input("Chủ đề Tranh Luận:", placeholder="Ví dụ: Tiền có mua được hạnh phúc không?")
-            
-            if "battle_logs" not in st.session_state: st.session_state.battle_logs = []
-
-            col_start, col_clear = st.columns([1, 5])
-            with col_start:
-                start_battle = st.button("🔥 KHAI CHIẾN", type="primary", key="btn_battle", disabled=(len(participants) < 2))
-            with col_clear:
-                if st.button("🗑️ Xóa Bàn", key="clr_battle"):
-                    st.session_state.battle_logs = []; st.rerun()
-
-            # Logic chạy vòng lặp tranh luận (Tăng lên 3 vòng)
-            if start_battle and topic and len(participants) > 1:
-                st.session_state.battle_logs = []
-                st.session_state.battle_logs.append(f"**📢 CHỦ TỌA:** Khai mạc tranh luận về: *'{topic}'*")
+            with st.container():
+                st.info("💡 Hướng dẫn: Chọn 2-3 triết gia, đặt chủ đề và xem họ 'đấu võ mồm'.")
                 
-                with st.status("Hội đồng đang tranh luận nảy lửa (3 vòng)...") as status:
-                    # Chạy 3 vòng lặp
-                    for round_num in range(1, 4):
-                        status.update(label=f"🔄 Vòng {round_num}/3 đang diễn ra...")
-                        
-                        for i, p_name in enumerate(participants):
-                            # Vòng 1: Đưa ra quan điểm. Vòng 2, 3: Phản bác người gần nhất
-                            if round_num == 1:
-                                p_prompt = f"Bạn là {p_name}. Chủ đề: {topic}. Đưa ra quan điểm đầu tiên."
-                            else:
-                                # Phản bác lại người vừa nói (người ở vị trí i-1)
-                                target_index = (i - 1 + len(participants)) % len(participants)
-                                target_name = participants[target_index]
-                                
-                                # Lấy bài nói cuối cùng của người kia
-                                last_speech = ""
-                                for log in reversed(st.session_state.battle_logs):
-                                    if log.startswith(f"**{target_name}:**"):
-                                        last_speech = log.replace(f"**{target_name}:** ", "")
-                                        break
-                                
-                                p_prompt = f"""
-                                VAI TRÒ: {p_name}. Tính cách: {personas[p_name]}.
-                                PHẢN BÁC: "{target_name}" vừa nói: "{last_speech}"
-                                Yêu cầu: Phản bác lại lập luận đó theo triết lý của bạn.
-                                """
-                            
-                            # Gọi AI
-                            res = model.generate_content(p_prompt)
-                            reply = res.text
-                            
-                            # Lưu log và hiển thị
-                            st.session_state.battle_logs.append(f"**{p_name}:** {reply}")
-                            time.sleep(1) 
+                participants = st.multiselect("Chọn các Đấu Thủ (Tối đa 3):", list(personas.keys()), default=["⚖️ Immanuel Kant", "🔥 Nietzsche"], key="multi_select_battle")
+                topic = st.text_input("Chủ đề Tranh Luận:", placeholder="Ví dụ: Tiền có mua được hạnh phúc không?", key="topic_input_battle")
+                
+                if "battle_logs" not in st.session_state: st.session_state.battle_logs = []
 
-                    status.update(label="✅ Tranh luận kết thúc! (Đã chạy 3 vòng)", state="complete")
-                    luu_lich_su_vinh_vien("Hội Đồng Tranh Biện", topic, "\n".join(st.session_state.battle_logs))
+                col_start, col_clear = st.columns([1, 5])
+                with col_start:
+                    # Key duy nhất cho nút bắt đầu
+                    start_battle = st.button("🔥 KHAI CHIẾN", type="primary", key="btn_start_battle", disabled=(len(participants) < 2))
+                with col_clear:
+                    if st.button("🗑️ Xóa Bàn", key="btn_clr_battle"):
+                        st.session_state.battle_logs = []; st.rerun()
 
-            # Hiển thị kết quả trận đấu
-            for log in st.session_state.battle_logs:
-                st.markdown(log)
-                st.markdown("---")
+                # Logic chạy vòng lặp tranh luận (3 Vòng)
+                if start_battle and topic and len(participants) > 1:
+                    st.session_state.battle_logs = []
+                    st.session_state.battle_logs.append(f"**📢 CHỦ TỌA:** Khai mạc tranh luận về: *'{topic}'*")
+                    
+                    with st.status("Hội đồng đang tranh luận nảy lửa (3 vòng)...") as status:
+                        for round_num in range(1, 4):
+                            status.update(label=f"🔄 Vòng {round_num}/3 đang diễn ra...")
+                            
+                            for i, p_name in enumerate(participants):
+                                if round_num == 1:
+                                    p_prompt = f"Bạn là {p_name}. Chủ đề: {topic}. Đưa ra quan điểm đầu tiên."
+                                else:
+                                    target_index = (i - 1 + len(participants)) % len(participants)
+                                    target_name = participants[target_index]
+                                    last_speech = ""
+                                    for log in reversed(st.session_state.battle_logs):
+                                        if log.startswith(f"**{target_name}:**"):
+                                            last_speech = log.replace(f"**{target_name}:** ", "")
+                                            break
+                                    p_prompt = f"VAI TRÒ: {p_name}. PHẢN BÁC: \"{target_name}\" vừa nói: \"{last_speech}\". Yêu cầu: Phản bác lại lập luận đó theo triết lý của bạn."
+                                
+                                res = model.generate_content(p_prompt)
+                                reply = res.text
+                                
+                                st.session_state.battle_logs.append(f"**{p_name}:** {reply}")
+                                time.sleep(1) 
+
+                        status.update(label="✅ Tranh luận kết thúc! (Đã chạy 3 vòng)", state="complete")
+                        # Lưu lịch sử vĩnh viễn
+                        luu_lich_su_vinh_vien("Hội Đồng Tranh Biện", topic, "\n".join(st.session_state.battle_logs))
+
+                # Hiển thị kết quả trận đấu
+                for log in st.session_state.battle_logs:
+                    st.markdown(log)
+                    st.markdown("---")
 
     # TAB 4: TTS (ĐÃ CÓ LẠI GIỌNG NỮ)
     with tab4:
