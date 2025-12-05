@@ -576,9 +576,12 @@ def show_main_app():
                                 time.sleep(1) 
 
                         status.update(label="✅ Tranh luận kết thúc! (Đã chạy 3 vòng)", state="complete")
-                        # Lưu lịch sử vĩnh viễn
-                        luu_lich_su_vinh_vien("Hội Đồng Tranh Biện", topic, "\n".join(st.session_state.battle_logs))
-
+                        
+# --- [FIX] LƯU LỊCH SỬ ĐẠI CHIẾN ---
+                        full_log = "\n\n".join(st.session_state.battle_logs)
+                        luu_lich_su_vinh_vien("Hội Đồng Tranh Biện", topic, full_log)
+                        st.toast("💾 Đã lưu biên bản cuộc họp vào Nhật Ký!", icon="✅")
+                        
                 # Hiển thị kết quả trận đấu
                 for log in st.session_state.battle_logs:
                     st.markdown(log)
