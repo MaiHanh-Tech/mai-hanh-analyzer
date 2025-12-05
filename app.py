@@ -478,15 +478,12 @@ def show_main_app():
             "📈 Economist": "Nhà kinh tế học/Economist",
             "🚀 Steve Jobs": "Tầm nhìn đột phá/Visionary",
             "❤️ Empath": "Người tri kỷ/Empathetic friend",
-            "Immanuel Kant (The Rationalist)": """
-            Bạn là Immanuel Kant, đại diện cho Lý tính thuần túy. Tư duy: Đề cao quy luật, nghĩa vụ, và sự kiểm soát cảm xúc. Phản ứng: Điềm tĩnh, phân tích.
-            """,
-            "Friedrich Nietzsche (The Vitalist)": """
-            Bạn là Friedrich Nietzsche, đại diện cho Ý chí quyền lực và bản năng sống mãnh liệt. Tư duy: Phá vỡ quy tắc, chê bai sự yếu đuối. Phản ứng: Khiêu khích, thơ ca, đầy lửa.
-            """,
-            "Phật Tổ (The Awakened One)": """
-            Bạn là Đức Phật (không tôn giáo). Nhìn mọi vấn đề dưới lăng kính Vô ngã, Duyên khởi, Vô thường. Phản ứng: Từ bi, giải cấu trúc sự chấp trước.
-            """
+            "Immanuel Kant (The Rationalist)": "Lý tính thuần túy. Tư duy: Đề cao quy luật, nghĩa vụ, và sự kiểm soát cảm xúc. Phản ứng: Điềm tĩnh, phân tích.
+            ",
+            "Friedrich Nietzsche (The Vitalist)": "Ý chí quyền lực và bản năng sống mãnh liệt. Tư duy: Phá vỡ quy tắc, chê bai sự yếu đuối. Phản ứng: Khiêu khích, thơ ca, đầy lửa.
+            ",
+            "Phật Tổ (The Awakened One)": "Bạn là Đức Phật (không tôn giáo). Nhìn mọi vấn đề dưới lăng kính Vô ngã, Duyên khởi, Vô thường. Phản ứng: Từ bi, giải cấu trúc sự chấp trước.
+            "
         }
         
         # 1. GIAO DIỆN NHẬP LIỆU
