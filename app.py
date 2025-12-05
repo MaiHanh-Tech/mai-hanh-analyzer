@@ -472,18 +472,16 @@ def show_main_app():
         st.subheader("🏛️ Hội Nghị Bàn Tròn Triết Học")
         
         # --- ĐỊNH NGHĨA CÁC TRIẾT GIA (8 NHÂN VẬT) ---
-        # Chị có thể thêm/bớt nhân vật và điều chỉnh prompt ở đây
+        # Đã thêm Devil's Advocate và các ông khác để đủ 8 ông như yêu cầu trước
         personas = {
-            "🤔 Socrates": "Triết gia Socrates (chỉ hỏi/only ask)",
-            "📈 Economist": "Nhà kinh tế học/Economist",
-            "🚀 Steve Jobs": "Tầm nhìn đột phá/Visionary",
-            "❤️ Empath": "Người tri kỷ/Empathetic friend",
-            "Immanuel Kant (The Rationalist)": "Lý tính thuần túy. Tư duy: Đề cao quy luật, nghĩa vụ, và sự kiểm soát cảm xúc. Phản ứng: Điềm tĩnh, phân tích.
-            ",
-            "Friedrich Nietzsche (The Vitalist)": "Ý chí quyền lực và bản năng sống mãnh liệt. Tư duy: Phá vỡ quy tắc, chê bai sự yếu đuối. Phản ứng: Khiêu khích, thơ ca, đầy lửa.
-            ",
-            "Phật Tổ (The Awakened One)": "Bạn là Đức Phật (không tôn giáo). Nhìn mọi vấn đề dưới lăng kính Vô ngã, Duyên khởi, Vô thường. Phản ứng: Từ bi, giải cấu trúc sự chấp trước.
-            "
+            "😈 Immanuel Kant (The Rationalist)": "Lý tính thuần túy. Tư duy: Đề cao quy luật, nghĩa vụ, và sự kiểm soát cảm xúc. Phản ứng: Điềm tĩnh, phân tích.",
+            "😉 Friedrich Nietzsche (The Vitalist)": "Ý chí quyền lực và bản năng sống mãnh liệt. Tư duy: Phá vỡ quy tắc, chê bai sự yếu đuối. Phản ứng: Khiêu khích, thơ ca, đầy lửa.",
+            "❤️ Phật Tổ (The Awakened One)": "Bạn là Đức Phật (không tôn giáo). Nhìn mọi vấn đề dưới lăng kính Vô ngã, Duyên khởi, Vô thường. Phản ứng: Từ bi, giải cấu trúc sự chấp trước.",
+            "😈 Devil's Advocate": "Bạn chuyên gia tìm lỗ hổng, phản biện lại mọi thứ, hoài nghi mọi niềm tin. Phản ứng: Khiêu khích, hoài nghi.", # Đã thêm lại vào danh sách chính
+            "🤔 Socrates (The Questioner)": "Triết gia Socrates. Nhiệm vụ của bạn là chỉ hỏi. Phản ứng: Liên tục đặt câu hỏi để buộc người khác phải nghi ngờ niềm tin của họ.",
+            "📈 Economist (Kahneman)": "Nhà Kinh tế học hành vi (Daniel Kahneman). Bạn nhìn mọi quyết định qua lăng kính Chi phí/Lợi ích, rủi ro, và Thiên kiến nhận thức.",
+            "🚀 Steve Jobs (The Visionary)": "Tầm nhìn đột phá. Bạn chỉ quan tâm đến Tầm nhìn, Thiết kế, và Trải nghiệm người dùng.",
+            "❤️ Empath (The Healer)": "Người Tri Kỷ, thấu hiểu cảm xúc. Bạn chỉ quan tâm đến sự an toàn, kết nối và cảm xúc của con người."
         }
         
         # 1. GIAO DIỆN NHẬP LIỆU
@@ -499,6 +497,7 @@ def show_main_app():
         selected_debaters = st.multiselect(
             "Chọn các Triết gia tham chiến (Chọn theo thứ tự muốn họ phát biểu):", 
             list(personas.keys()), 
+            # Đã sửa lại default để chứa các nhân vật triết học chính
             default=["Immanuel Kant (The Rationalist)", "Friedrich Nietzsche (The Vitalist)", "Phật Tổ (The Awakened One)", "😈 Devil's Advocate"]
         )
 
@@ -569,7 +568,7 @@ def show_main_app():
                 
                 # Lưu toàn bộ log tranh luận vào DB
                 luu_lich_su_vinh_vien("Hội Nghị Bàn Tròn", topic, debate_log)
-                st.success("Cuộc tranh biện kết thúc. Ai thắng, ai thua, tự bạn quyết định! 😉")
+                st.success("Cuộc tranh biện kết thúc. Ai thắng, ai thua, tự bạn quyết định! 😉"))
     
 
     # TAB 4: TTS (ĐÃ CÓ LẠI GIỌNG NỮ)
