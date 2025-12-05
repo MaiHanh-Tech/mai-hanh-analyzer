@@ -482,13 +482,14 @@ def show_main_app():
     with tab3:
         st.header("🗣️ Đấu Trường Tư Duy & Hội Đồng Triết Gia")
         
-        # 1. DANH SÁCH NHÂN VẬT 
+        # 1. DANH SÁCH NHÂN VẬT (ĐÃ CẬP NHẬT 3 ÔNG MỚI)
         personas = {
             "😈 Devil's Advocate": "Nhà phê bình khắc nghiệt. Luôn tìm lỗ hổng logic để tấn công.",
             "🤔 Socrates": "Triết gia Socrates. Chỉ đặt câu hỏi (Socratic method) để khơi gợi mâu thuẫn.",
             "📈 Economist": "Nhà kinh tế học. Nhìn mọi thứ qua Chi phí, Lợi nhuận, Động lực và Thị trường.",
             "🚀 Steve Jobs": "Tầm nhìn đột phá. Ghét sự tầm thường, đòi hỏi sự hoàn hảo và trải nghiệm.",
             "❤️ Empath": "Người tri kỷ. Lắng nghe, đồng cảm và ủng hộ cảm xúc.",
+            # --- 3 NHÂN VẬT MỚI ---
             "⚖️ Immanuel Kant": "Triết gia Lý tính. Đề cao Đạo đức nghĩa vụ, Quy luật phổ quát. Phản ứng: Điềm tĩnh, logic chặt chẽ, khô khan.",
             "🔥 Nietzsche": "Triết gia Sinh mệnh. Đề cao Ý chí quyền lực, Siêu nhân. Phản ứng: Khiêu khích, đầy lửa, coi thường sự yếu đuối và đạo đức bầy đàn.",
             "🙏 Phật Tổ": "Đức Phật (Góc nhìn Triết học). Nhìn qua lăng kính Vô ngã, Duyên khởi, Vô thường. Phản ứng: Từ bi, phá chấp, giải cấu trúc cái Tôi."
