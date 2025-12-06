@@ -21,6 +21,7 @@ import json
 import re
 from streamlit_agraph import agraph, Node, Edge, Config
 import sys
+from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable
 
 # Fix lỗi asyncio trên Windows (nếu chạy local)
 if sys.platform == 'win32':
@@ -58,7 +59,7 @@ TRANS = {
         "t1_connect_ok": "✅ Đã kết nối {n} cuốn sách.",
         "t1_analyzing": "Đang phân tích {name}...",
         "t1_graph_title": "🪐 Vũ Trụ Sách",
-        # Tab 2 (Đã sửa lại key cho phù hợp logic mới)
+        # Tab 2
         "t2_header": "Dịch Thuật Đa Chiều",
         "t2_input": "Nhập văn bản cần dịch:",
         "t2_target": "Dịch sang:",
@@ -182,11 +183,6 @@ TRANS = {
     }
 }
 
-# Hàm lấy text theo ngôn ngữ
-def T(key):
-    lang = st.session_state.get('lang', 'vi')
-    return TRANS[lang].get(key, key)
-
 # --- 2. CLASS QUẢN LÝ MẬT KHẨU ---
 class PasswordManager:
     def __init__(self):
@@ -208,7 +204,26 @@ class PasswordManager:
         return False
 
     def is_admin(self, password):
-        return password == st.secrets.get("admin_password")
+        # Sửa: Cho phép admin_password HOẶC pass "admin_maihanh" là Admin
+        is_master = (password == st.secrets.get("admin_password"))
+        is_maihanh = (password == "admin_maihanh") 
+        return is_master or is_maihanh
+
+# --- HÀM GỌI API AN TOÀN (FIX LỖI QUOTA) ---
+def run_gemini_safe(model_func, prompt, retries=3):
+    """Hàm bọc để tự động chờ khi hết quota"""
+    for i in range(retries):
+        try:
+            return model_func(prompt)
+        except ResourceExhausted:
+            wait_time = (i + 1) * 10  
+            st.warning(f"⚠️ Hệ thống đang bận (Hết Quota), đang thử lại sau {wait_time}s... (Lần {i+1}/{retries})")
+            time.sleep(wait_time)
+        except Exception as e:
+            time.sleep(5)
+            if i == retries - 1: return None
+    st.error("❌ Hệ thống quá tải. Vui lòng thử lại sau vài phút.")
+    return None
 
 # --- 3. DATABASE MANAGER ---
 def connect_gsheet():
@@ -229,15 +244,22 @@ def phan_tich_cam_xuc(text: str):
     try:
         sys_api_key = st.secrets["system"]["gemini_api_key"]
         genai.configure(api_key=sys_api_key)
-        try: model = genai.GenerativeModel("gemini-1.5-flash")
-        except: model = genai.GenerativeModel("gemini-pro")
+        
+        # --- CẤU HÌNH MODEL CHO PHÂN TÍCH CẢM XÚC (Pro trước, Flash sau) ---
+        try: 
+            model = genai.GenerativeModel("gemini-2.5-pro")
+        except: 
+            model = genai.GenerativeModel("gemini-2.5-flash")
+        # -------------------------------------------------------------------
 
         prompt = f"""Analyze sentiment. Return JSON: {{"sentiment_score": float (-1.0 to 1.0), "sentiment_label": string}}. Text: \"\"\"{text[:1000]}\"\"\""""
-        res = model.generate_content(prompt)
-        m = re.search(r"\{.*\}", res.text, re.S)
-        if m:
-            data = json.loads(m.group(0))
-            return float(data.get("sentiment_score", 0)), str(data.get("sentiment_label", "Neutral"))
+        try:
+            res = model.generate_content(prompt)
+            m = re.search(r"\{.*\}", res.text, re.S)
+            if m:
+                data = json.loads(m.group(0))
+                return float(data.get("sentiment_score", 0)), str(data.get("sentiment_label", "Neutral"))
+        except: pass
     except: pass
     return 0.0, "Neutral"
 
@@ -330,8 +352,14 @@ def show_main_app():
     try:
         sys_api_key = st.secrets["system"]["gemini_api_key"]
         genai.configure(api_key=sys_api_key)
-        try: model = genai.GenerativeModel("gemini-2.5-pro")
-        except: model = genai.GenerativeModel("gemini-2.5-flash")
+        
+        # --- [ĐÃ SỬA] ƯU TIÊN PRO TRƯỚC, FLASH SAU ---
+        try: 
+            model = genai.GenerativeModel("gemini-2.5-pro")
+        except: 
+            model = genai.GenerativeModel("gemini-2.5-flash")
+        # ----------------------------------------------
+            
     except: st.stop()
 
     # --- SIDEBAR & NGÔN NGỮ ---
@@ -390,9 +418,11 @@ def show_main_app():
 
                 with st.spinner(T("t1_analyzing").format(name=f.name)):
                     prompt = f"Analyze '{f.name}'. User Language: {st.session_state.lang}. Related: {link}. Content: {text[:20000]}"
-                    res = model.generate_content(prompt)
-                    st.markdown(f"### 📄 {f.name}"); st.markdown(res.text); st.markdown("---")
-                    luu_lich_su_vinh_vien("Phân Tích Sách", f.name, res.text)
+                    # Sử dụng hàm an toàn
+                    res = run_gemini_safe(model.generate_content, prompt)
+                    if res:
+                        st.markdown(f"### 📄 {f.name}"); st.markdown(res.text); st.markdown("---")
+                        luu_lich_su_vinh_vien("Phân Tích Sách", f.name, res.text)
 
         # Graph
         if file_excel:
@@ -425,7 +455,7 @@ def show_main_app():
                     agraph(nodes, edges, config)
             except: pass
 
-    # TAB 2: DỊCH (ĐÃ SỬA: CHỌN NGÔN NGỮ ĐÍCH + FULL WIDTH)
+    # TAB 2: DỊCH
     with tab2:
         st.header(T("t2_header"))
         
@@ -452,21 +482,22 @@ def show_main_app():
                 YÊU CẦU:
                 1. Ngôn ngữ đích: {target_lang}.
                 2. Phong cách: {style}.
-                3. QUAN TRỌNG: Nếu dịch sang TIẾNG TRUNG, bắt buộc cung cấp: Chữ Hán, Pinyin (có dấu), và Nghĩa Hán Việt.
+                3. QUAN TRỌNG: Nếu dịch sang TIẾNG TRUNG, bắt buộc cung cấp: Chữ Hán, Pinyin (có dấu).
                 4. Phân tích 3 từ vựng/cấu trúc hay nhất.
                 
                 Văn bản gốc: "{txt}"
                 """
-                res = model.generate_content(prompt)
+                res = run_gemini_safe(model.generate_content, prompt)
                 
-                st.markdown("---")
-                st.markdown(res.text)
-                
-                # Nút tải HTML
-                html_content = f"<html><body><h2>Translation</h2><p><b>Original:</b> {txt}</p><hr>{markdown.markdown(res.text)}</body></html>"
-                st.download_button("💾 Download HTML", html_content, "translation.html", "text/html")
-                
-                luu_lich_su_vinh_vien("Dịch Thuật", f"{target_lang}: {txt[:20]}...", res.text)
+                if res:
+                    st.markdown("---")
+                    st.markdown(res.text)
+                    
+                    # Nút tải HTML
+                    html_content = f"<html><body><h2>Translation</h2><p><b>Original:</b> {txt}</p><hr>{markdown.markdown(res.text)}</body></html>"
+                    st.download_button("💾 Download HTML", html_content, "translation.html", "text/html")
+                    
+                    luu_lich_su_vinh_vien("Dịch Thuật", f"{target_lang}: {txt[:20]}...", res.text)
 
   # === TAB 3: ĐẤU TRƯỜNG TƯ DUY (MULTI-AGENT ARENA) ===
     with tab3:
@@ -490,7 +521,7 @@ def show_main_app():
         
         st.divider()
 
-        # --- CHẾ ĐỘ 1: SOLO (CHỊ vs AI) ---
+        # --- CHẾ ĐỘ 1: SOLO (user vs AI) ---
         if mode == "👤 Solo (User vs AI)":
             # Dùng Container để cô lập không gian ID
             with st.container():
@@ -521,13 +552,11 @@ def show_main_app():
                     YÊU CẦU: Phân tích sâu, phản biện sắc sảo, và trả lời bằng ngôn ngữ của người dùng.
                     """
                     
-                    try:
-                        res = model.generate_content(prompt)
+                    res = run_gemini_safe(model.generate_content, prompt)
+                    if res:
                         st.chat_message("assistant").markdown(res.text)
                         st.session_state.chat_history.append({"role":"assistant", "content":res.text})
-                        # Lưu lịch sử vĩnh viễn
                         luu_lich_su_vinh_vien("Tranh Biện Solo", f"Vs {p_sel}: {q}", res.text)
-                    except Exception as e: st.error(f"Lỗi AI: {e}")
 
         # --- CHẾ ĐỘ 2: DEBATE (AI vs AI) ---
         else:
@@ -541,7 +570,6 @@ def show_main_app():
 
                 col_start, col_clear = st.columns([1, 5])
                 with col_start:
-                    # Key duy nhất cho nút bắt đầu
                     start_battle = st.button("🔥 KHAI CHIẾN", type="primary", key="btn_start_battle", disabled=(len(participants) < 2))
                 with col_clear:
                     if st.button("🗑️ Xóa Bàn", key="btn_clr_battle"):
@@ -569,15 +597,15 @@ def show_main_app():
                                             break
                                     p_prompt = f"VAI TRÒ: {p_name}. PHẢN BÁC: \"{target_name}\" vừa nói: \"{last_speech}\". Yêu cầu: Phản bác lại lập luận đó theo triết lý của bạn."
                                 
-                                res = model.generate_content(p_prompt)
-                                reply = res.text
-                                
-                                st.session_state.battle_logs.append(f"**{p_name}:** {reply}")
-                                time.sleep(1) 
+                                # SỬ DỤNG HÀM AN TOÀN + SLEEP NHIỀU HƠN
+                                res = run_gemini_safe(model.generate_content, p_prompt)
+                                if res:
+                                    reply = res.text
+                                    st.session_state.battle_logs.append(f"**{p_name}:** {reply}")
+                                    time.sleep(4) # Tăng lên 4 giây để tránh lỗi ResourceExhausted
 
                         status.update(label="✅ Tranh luận kết thúc! (Đã chạy 3 vòng)", state="complete")
                         
-# --- [FIX] LƯU LỊCH SỬ ĐẠI CHIẾN ---
                         full_log = "\n\n".join(st.session_state.battle_logs)
                         luu_lich_su_vinh_vien("Hội Đồng Tranh Biện", topic, full_log)
                         st.toast("💾 Đã lưu biên bản cuộc họp vào Nhật Ký!", icon="✅")
@@ -653,7 +681,10 @@ def main():
                     st.session_state.user_logged_in = True
                     st.session_state.current_user = p
                     st.session_state.current_user_name = st.session_state.key_name_mapping.get(p, "User")
-                    st.session_state.is_admin = pm.is_admin(p) # <--- DÒNG MỚI ĐÃ THÊM
+                    
+                    # QUAN TRỌNG: Kiểm tra lại quyền Admin tại đây
+                    st.session_state.is_admin = pm.is_admin(p)
+                    
                     st.rerun()
                 else: st.error(T("wrong_pass"))
     else:
