@@ -582,24 +582,44 @@ def show_main_app():
             c1, c2 = st.columns([1, 1])
             with c1:
                 # 1. Nhập câu mẫu
-                txt_speak = st.text_area("1. Nhập câu bạn muốn luyện:", height=100, value="Hello, nice to meet you." if "Anh" in target_lang else "你好，很高兴认识你。")
+                default_txt = "Hello, nice to meet you." if "Anh" in target_lang else "你好，很高兴认识你。"
+                txt_speak = st.text_area("1. Nhập câu bạn muốn luyện:", height=100, value=default_txt)
                 
-                # 2. Nghe AI đọc mẫu trước
+                # 2. Nghe AI đọc mẫu (ĐÃ THÊM CƠ CHẾ BẮT LỖI)
                 if st.button("🔊 Nghe AI đọc mẫu"):
-                    v_code = "en-US-AndrewMultilingualNeural" if "Anh" in target_lang else "zh-CN-XiaoyiNeural"
-                    generate_edge_audio_sync(txt_speak, v_code, "+0%", "sample.mp3")
-                    st.audio("sample.mp3")
+                    if not txt_speak.strip():
+                        st.warning("⚠️ Vui lòng nhập nội dung cần đọc trước!")
+                    else:
+                        try:
+                            # Chọn giọng đọc ổn định hơn
+                            if "Anh" in target_lang:
+                                # Dùng giọng Christopher (Mỹ) cho ổn định thay vì Andrew
+                                v_code = "en-US-ChristopherNeural" 
+                            else:
+                                # Dùng giọng Xiaoyi (Trung)
+                                v_code = "zh-CN-XiaoyiNeural"
+                            
+                            with st.spinner("Đang tải âm thanh từ Server Microsoft..."):
+                                generate_edge_audio_sync(txt_speak, v_code, "+0%", "sample.mp3")
+                                st.audio("sample.mp3")
+                                
+                        except Exception as e:
+                            st.warning(f"⚠️ Server đọc đang bận, vui lòng thử lại sau vài giây. (Lỗi: {str(e)[:50]}...)")
 
             with c2:
                 st.write("2. Bấm nút dưới để Ghi âm giọng của bạn:")
                 # Thư viện ghi âm
-                audio = mic_recorder(
-                    start_prompt="🎙️ Bắt đầu nói",
-                    stop_prompt="⏹️ Dừng (Gửi AI chấm)",
-                    key='recorder',
-                    format="wav",
-                    use_container_width=True
-                )
+                try:
+                    audio = mic_recorder(
+                        start_prompt="🎙️ Bắt đầu nói",
+                        stop_prompt="⏹️ Dừng (Gửi AI chấm)",
+                        key='recorder',
+                        format="wav",
+                        use_container_width=True
+                    )
+                except: 
+                    st.error("Lỗi thư viện ghi âm. Vui lòng F5 lại trang.")
+                    audio = None
                 
                 if audio:
                     st.audio(audio['bytes']) # Nghe lại giọng mình
@@ -643,11 +663,12 @@ def show_main_app():
                                 Nhận xét về ngữ điệu (Intonation) và độ trôi chảy (Fluency).
                                 """
                                 
-                                # Gọi Gemini 1.5 Pro/Flash (Hỗ trợ Audio)
-                                response = model.generate_content([prompt_scoring, audio_file])
+                                # Gọi Gemini
+                                response = run_gemini_safe(model.generate_content, [prompt_scoring, audio_file])
                                 
-                                st.markdown("---")
-                                st.markdown(response.text)
+                                if response:
+                                    st.markdown("---")
+                                    st.markdown(response.text)
                                 
                             except Exception as e:
                                 st.error(f"Lỗi xử lý âm thanh: {e}")
