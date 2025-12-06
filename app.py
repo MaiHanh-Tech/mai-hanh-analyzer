@@ -21,6 +21,7 @@ import re
 from streamlit_agraph import agraph, Node, Edge, Config
 import sys
 from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable
+from streamlit_mic_recorder import mic_recorder
 
 # Fix lỗi asyncio trên Windows
 if sys.platform == 'win32':
@@ -574,36 +575,87 @@ def show_main_app():
                         res_exp = run_gemini_safe(model.generate_content, p_explain)
                         if res_exp: st.markdown(res_exp.text)
 
-        # --- KỸ NĂNG 4: SPEAKING (LUYỆN NÓI & PHIÊN ÂM/PINYIN) ---
+        # --- KỸ NĂNG 4: SPEAKING (LUYỆN NÓI - GHI ÂM & AI CHẤM ĐIỂM) ---
         elif "Speaking" in skill_mode:
+            st.subheader(f"🗣️ Phòng Luyện Nói & Chỉnh Âm ({target_lang})")
+            
             c1, c2 = st.columns([1, 1])
             with c1:
-                txt_speak = st.text_area(f"Nhập câu muốn luyện nói ({target_lang}):", height=150)
-            
-            with c2:
-                st.info("AI sẽ: Tạo Audio mẫu + Phiên âm (IPA/Pinyin) + Hướng dẫn phát âm.")
-                if st.button("🗣️ Phân Tích & Tạo Mẫu", type="primary") and txt_speak:
-                    # 1. Chọn giọng mặc định để đọc mẫu
+                # 1. Nhập câu mẫu
+                txt_speak = st.text_area("1. Nhập câu bạn muốn luyện:", height=100, value="Hello, nice to meet you." if "Anh" in target_lang else "你好，很高兴认识你。")
+                
+                # 2. Nghe AI đọc mẫu trước
+                if st.button("🔊 Nghe AI đọc mẫu"):
                     v_code = "en-US-AndrewMultilingualNeural" if "Anh" in target_lang else "zh-CN-XiaoyiNeural"
-                    generate_edge_audio_sync(txt_speak, v_code, "+0%", "speaking_sample.mp3")
-                    st.audio("speaking_sample.mp3")
-                    
-                    # 2. Phân tích ngữ âm
-                    with st.spinner("Đang phân tích khẩu hình..."):
-                        if "Anh" in target_lang:
-                            req = "IPA Transcription, Intonation (lên xuống giọng), Linking sounds (nối âm)."
-                        else:
-                            req = "Pinyin (có thanh điệu), Tone changes (biến điệu), Difficult sounds."
-                            
-                        prompt_ipa = f"""
-                        Analyze this sentence for a {user_level} learner of {target_lang}: "{txt_speak}"
-                        OUTPUT:
-                        1. **Phonetics:** {req}
-                        2. **Mistakes to avoid:** Các lỗi sai thường gặp của người Việt khi nói câu này.
-                        """
-                        res_ipa = run_gemini_safe(model.generate_content, prompt_ipa)
-                        if res_ipa: st.markdown(res_ipa.text)
+                    generate_edge_audio_sync(txt_speak, v_code, "+0%", "sample.mp3")
+                    st.audio("sample.mp3")
 
+            with c2:
+                st.write("2. Bấm nút dưới để Ghi âm giọng của bạn:")
+                # Thư viện ghi âm
+                audio = mic_recorder(
+                    start_prompt="🎙️ Bắt đầu nói",
+                    stop_prompt="⏹️ Dừng (Gửi AI chấm)",
+                    key='recorder',
+                    format="wav",
+                    use_container_width=True
+                )
+                
+                if audio:
+                    st.audio(audio['bytes']) # Nghe lại giọng mình
+                    
+                    if st.button("✨ CHẤM ĐIỂM PHÁT ÂM NGAY"):
+                        with st.spinner("AI đang nghe giọng bạn và soi từng lỗi..."):
+                            # Lưu file tạm để gửi cho Gemini
+                            temp_filename = "user_voice.wav"
+                            with open(temp_filename, "wb") as f:
+                                f.write(audio['bytes'])
+                            
+                            # Upload file lên Gemini (Tính năng Multimodal)
+                            try:
+                                audio_file = genai.upload_file(temp_filename)
+                                
+                                # Prompt cực chi tiết để chấm điểm
+                                prompt_scoring = f"""
+                                Act as a strict Pronunciation Coach for {target_lang}.
+                                
+                                1. I will provide an AUDIO file of a student speaking.
+                                2. The TARGET SENTENCE is: "{txt_speak}"
+                                
+                                TASK:
+                                Listen to the audio and compare it with the Target Sentence.
+                                
+                                OUTPUT FORMAT (Markdown):
+                                
+                                ## 🎯 ĐIỂM SỐ: [Score]/100
+                                
+                                ### 👂 AI Nghe Được Là:
+                                "[Transcribe exactly what the user said here]"
+                                
+                                ### ❌ Lỗi Sai Cụ Thể (Word-by-Word Analysis):
+                                Liệt kê từng từ sai. Với mỗi từ sai:
+                                - **Từ gốc:** ...
+                                - **Bạn đọc là:** (Dùng IPA hoặc mô tả âm thanh bạn nghe được)
+                                - **Lỗi sai:** (VD: Sai trọng âm, thiếu ending sound 's', sai thanh điệu...)
+                                - **Cách sửa:** Hướng dẫn khẩu hình/cách đặt lưỡi.
+                                
+                                ### 💡 Lời Khuyên Chung:
+                                Nhận xét về ngữ điệu (Intonation) và độ trôi chảy (Fluency).
+                                """
+                                
+                                # Gọi Gemini 1.5 Pro/Flash (Hỗ trợ Audio)
+                                response = model.generate_content([prompt_scoring, audio_file])
+                                
+                                st.markdown("---")
+                                st.markdown(response.text)
+                                
+                            except Exception as e:
+                                st.error(f"Lỗi xử lý âm thanh: {e}")
+                            finally:
+                                # Dọn dẹp file tạm
+                                if os.path.exists(temp_filename):
+                                    os.remove(temp_filename)
+                                    
   # === TAB 3: ĐẤU TRƯỜNG TƯ DUY (MULTI-AGENT ARENA) ===
     with tab3:
         st.header(T("t3_header"))
