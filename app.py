@@ -16,22 +16,21 @@ from datetime import datetime
 import plotly.express as px
 import markdown
 import edge_tts
-import asyncio
 import json
 import re
 from streamlit_agraph import agraph, Node, Edge, Config
 import sys
 from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable
 
-# Fix lỗi asyncio trên Windows (nếu chạy local)
+# Fix lỗi asyncio trên Windows
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-# --- 1. CẤU HÌNH TRANG ---
+# --- 1. CẤU HÌNH TRANG (PHẢI Ở DÒNG ĐẦU TIÊN) ---
 st.set_page_config(page_title="The Cognitive Weaver", layout="wide", page_icon="💎")
 
 # ==========================================
-# 🌍 BỘ TỪ ĐIỂN ĐA NGÔN NGỮ (I18N)
+# 🌍 BỘ TỪ ĐIỂN ĐA NGÔN NGỮ (ĐƯA LÊN ĐẦU ĐỂ TRÁNH LỖI)
 # ==========================================
 TRANS = {
     "vi": {
@@ -94,13 +93,11 @@ TRANS = {
         "role_admin": "Admin",
         "role_user": "Member",
         "lang_select": "Language",
-        # Tabs
         "tab1": "📚 Book Analysis",
         "tab2": "✍️ Translator",
         "tab3": "🗣️ Debater",
         "tab4": "🎙️ AI Studio",
         "tab5": "⏳ History",
-        # Tab 1
         "t1_header": "Research Assistant & Knowledge Graph",
         "t1_up_excel": "1. Connect Book Database (Excel)",
         "t1_up_doc": "2. New Documents (PDF/Docx)",
@@ -108,25 +105,21 @@ TRANS = {
         "t1_connect_ok": "✅ Connected {n} books.",
         "t1_analyzing": "Analyzing {name}...",
         "t1_graph_title": "🪐 Book Universe",
-        # Tab 2
         "t2_header": "Multidimensional Translator",
         "t2_input": "Enter text to translate:",
         "t2_target": "Translate to:",
         "t2_style": "Style:",
         "t2_btn": "✍️ Translate",
         "t2_styles": ["Default", "Academic", "Literary/Emotional", "Casual", "Business", "Wuxia/Martial Arts"],
-        # Tab 3
         "t3_header": "Thinking Arena",
         "t3_persona_label": "Choose Opponent:",
         "t3_input": "Enter debate topic...",
         "t3_clear": "🗑️ Clear Chat",
-        # Tab 4
         "t4_header": "🎙️ Multilingual AI Studio",
         "t4_voice": "Select Voice:",
         "t4_speed": "Speed:",
         "t4_btn": "🔊 GENERATE AUDIO",
         "t4_dl": "⬇️ DOWNLOAD MP3",
-        # Tab 5
         "t5_header": "Logs & History",
         "t5_refresh": "🔄 Refresh History",
         "t5_empty": "No history data found.",
@@ -143,13 +136,11 @@ TRANS = {
         "role_admin": "管理员",
         "role_user": "成员",
         "lang_select": "语言",
-        # Tabs
         "tab1": "📚 书籍分析",
         "tab2": "✍️ 翻译专家",
         "tab3": "🗣️ 辩论场",
         "tab4": "🎙️ AI 录音室",
         "tab5": "⏳ 历史记录",
-        # Tab 1
         "t1_header": "研究助手 & 知识图谱",
         "t1_up_excel": "1. 连接书库 (Excel)",
         "t1_up_doc": "2. 上传新文档 (PDF/Docx)",
@@ -157,31 +148,32 @@ TRANS = {
         "t1_connect_ok": "✅ 已连接 {n} 本书。",
         "t1_analyzing": "正在分析 {name}...",
         "t1_graph_title": "🪐 书籍宇宙",
-        # Tab 2
         "t2_header": "多维翻译",
         "t2_input": "输入文本:",
         "t2_target": "翻译成:",
         "t2_style": "风格:",
         "t2_btn": "✍️ 翻译",
         "t2_styles": ["默认", "学术", "文学/情感", "日常", "商业", "武侠"],
-        # Tab 3
         "t3_header": "思维竞技场",
         "t3_persona_label": "选择对手:",
         "t3_input": "输入辩论主题...",
         "t3_clear": "🗑️ 清除聊天",
-        # Tab 4
         "t4_header": "🎙️ AI 多语言录音室",
         "t4_voice": "选择声音:",
         "t4_speed": "语速:",
         "t4_btn": "🔊 生成音频",
         "t4_dl": "⬇️ 下载 MP3",
-        # Tab 5
         "t5_header": "日志 & 历史",
         "t5_refresh": "🔄 刷新历史",
         "t5_empty": "暂无历史数据。",
         "t5_chart": "📈 情绪图表",
     }
 }
+
+# Hàm lấy text theo ngôn ngữ (Đặt ở đây để Main có thể gọi ngay)
+def T(key):
+    lang = st.session_state.get('lang', 'vi')
+    return TRANS.get(lang, TRANS['vi']).get(key, key)
 
 # --- 2. CLASS QUẢN LÝ MẬT KHẨU ---
 class PasswordManager:
@@ -204,7 +196,7 @@ class PasswordManager:
         return False
 
     def is_admin(self, password):
-        # Sửa: Cho phép admin_password HOẶC pass "admin_maihanh" là Admin
+        # Cho phép admin_password HOẶC pass "admin_maihanh" là Admin
         is_master = (password == st.secrets.get("admin_password"))
         is_maihanh = (password == "admin_maihanh") 
         return is_master or is_maihanh
@@ -353,7 +345,7 @@ def show_main_app():
         sys_api_key = st.secrets["system"]["gemini_api_key"]
         genai.configure(api_key=sys_api_key)
         
-        # --- [ĐÃ SỬA] ƯU TIÊN PRO TRƯỚC, FLASH SAU ---
+        # --- ƯU TIÊN PRO TRƯỚC, FLASH SAU ---
         try: 
             model = genai.GenerativeModel("gemini-2.5-pro")
         except: 
@@ -681,10 +673,7 @@ def main():
                     st.session_state.user_logged_in = True
                     st.session_state.current_user = p
                     st.session_state.current_user_name = st.session_state.key_name_mapping.get(p, "User")
-                    
-                    # QUAN TRỌNG: Kiểm tra lại quyền Admin tại đây
-                    st.session_state.is_admin = pm.is_admin(p)
-                    
+                    st.session_state.is_admin = pm.is_admin(p) 
                     st.rerun()
                 else: st.error(T("wrong_pass"))
     else:
