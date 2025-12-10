@@ -22,8 +22,33 @@ from streamlit_agraph import agraph, Node, Edge, Config
 import sys
 from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable
 from streamlit_mic_recorder import mic_recorder
+from groq import Groq # <--- Groq đã được import
 
-# Fix lỗi asyncio trên Windows
+# --- HÀM GỌI GROQ (KHÔNG SỬA) ---
+def run_groq_api(prompt, model="mixtral-8x7b-32768"):
+    """Gọi Groq API cho các tác vụ cần tốc độ (Chat/Tranh biện)"""
+    try:
+        groq_api_key = st.secrets["system"]["groq_api_key"]
+        if not groq_api_key: return "Error: Groq API Key not found."
+
+        client = Groq(api_key=groq_api_key)
+        
+        # Gọi API
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a concise and witty debater."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.8, # Thích hợp cho Tranh biện (sáng tạo hơn)
+            max_tokens=2048
+        )
+        return completion.choices[0].message.content
+        
+    except Exception as e:
+        return f"[Groq Error: {str(e)}]"
+        
+# Fix lỗi asyncio trên Windows (Giữ nguyên)
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -31,7 +56,7 @@ if sys.platform == 'win32':
 st.set_page_config(page_title="The Cognitive Weaver", layout="wide", page_icon="💎")
 
 # ==========================================
-# 🌍 BỘ TỪ ĐIỂN ĐA NGÔN NGỮ (ĐƯA LÊN ĐẦU ĐỂ TRÁNH LỖI)
+# 🌍 BỘ TỪ ĐIỂN ĐA NGÔN NGỮ (GIỮ NGUYÊN)
 # ==========================================
 TRANS = {
     "vi": {
@@ -171,7 +196,7 @@ TRANS = {
     }
 }
 
-# Hàm lấy text theo ngôn ngữ (Đặt ở đây để Main có thể gọi ngay)
+# Hàm lấy text theo ngôn ngữ (Giữ nguyên)
 def T(key):
     lang = st.session_state.get('lang', 'vi')
     return TRANS.get(lang, TRANS['vi']).get(key, key)
@@ -204,7 +229,7 @@ class PasswordManager:
 
 # --- HÀM GỌI API AN TOÀN (FIX LỖI QUOTA) ---
 def run_gemini_safe(model_func, prompt, retries=3):
-    """Hàm bọc để tự động chờ khi hết quota"""
+    """Hàm bọc để tự động chờ khi hết quota (Giữ nguyên)"""
     for i in range(retries):
         try:
             return model_func(prompt)
@@ -220,6 +245,7 @@ def run_gemini_safe(model_func, prompt, retries=3):
 
 # --- 3. DATABASE MANAGER ---
 def connect_gsheet():
+    # ... (Giữ nguyên) ...
     try:
         if "gcp_service_account" not in st.secrets: return None
         creds_dict = dict(st.secrets["gcp_service_account"])
@@ -234,6 +260,7 @@ def connect_gsheet():
 
 # --- 3b. SENTIMENT ANALYSIS ---
 def phan_tich_cam_xuc(text: str):
+    # GIỮ NGUYÊN GEMINI VÌ CHUYÊN PHÂN TÍCH JSON
     try:
         sys_api_key = st.secrets["system"]["gemini_api_key"]
         genai.configure(api_key=sys_api_key)
@@ -258,6 +285,7 @@ def phan_tich_cam_xuc(text: str):
 
 # --- LƯU & TẢI ---
 def luu_lich_su_vinh_vien(loai, tieu_de, noi_dung):
+    # ... (Giữ nguyên) ...
     thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     current_user = st.session_state.get("current_user_name", "Unknown")
     score, label = 0.0, "Neutral"
@@ -276,6 +304,7 @@ def luu_lich_su_vinh_vien(loai, tieu_de, noi_dung):
     except: pass
 
 def tai_lich_su_tu_sheet():
+    # ... (Giữ nguyên) ...
     try:
         sheet = connect_gsheet()
         if sheet:
@@ -300,9 +329,11 @@ def tai_lich_su_tu_sheet():
 # --- 4. CÁC HÀM XỬ LÝ KHÁC ---
 @st.cache_resource
 def load_models():
+    # ... (Giữ nguyên) ...
     return SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
 def doc_file(uploaded_file):
+    # ... (Giữ nguyên) ...
     if not uploaded_file: return ""
     ext = os.path.splitext(uploaded_file.name)[1].lower()
     try:
@@ -321,6 +352,7 @@ def doc_file(uploaded_file):
     return ""
 
 def generate_edge_audio_sync(text, voice_code, rate, out_path="studio_output.mp3"):
+    # ... (Giữ nguyên) ...
     async def _gen():
         communicate = edge_tts.Communicate(text, voice_code, rate=rate)
         await communicate.save(out_path)
@@ -346,7 +378,7 @@ def show_main_app():
         sys_api_key = st.secrets["system"]["gemini_api_key"]
         genai.configure(api_key=sys_api_key)
         
-        # --- ƯU TIÊN PRO TRƯỚC, FLASH SAU ---
+        # --- ƯU TIÊN PRO TRƯỚC, FLASH SAU (Cho Tab 1, 2, 4, 5) ---
         try: 
             model = genai.GenerativeModel("gemini-2.5-pro")
         except: 
@@ -378,7 +410,7 @@ def show_main_app():
     # TABS (Dùng biến T để dịch)
     tab1, tab2, tab3, tab4, tab5 = st.tabs([T("tab1"), T("tab2"), T("tab3"), T("tab4"), T("tab5")])
 
-    # TAB 1: RAG
+    # TAB 1: RAG (Dùng Gemini)
     with tab1:
         st.header(T("t1_header"))
         with st.container():
@@ -417,7 +449,7 @@ def show_main_app():
                         st.markdown(f"### 📄 {f.name}"); st.markdown(res.text); st.markdown("---")
                         luu_lich_su_vinh_vien("Phân Tích Sách", f.name, res.text)
 
-        # Graph
+        # Graph (Giữ nguyên)
         if file_excel:
             try:
                 if "df_viz" not in st.session_state: st.session_state.df_viz = pd.read_excel(file_excel).dropna(subset=["Tên sách"])
@@ -448,241 +480,55 @@ def show_main_app():
                     agraph(nodes, edges, config)
             except: pass
 
-   # === TAB 2: HỌC VIỆN NGÔN NGỮ AI (ANH/TRUNG - PHÂN CẤP) ===
+    # TAB 2: DỊCH (Dùng Gemini)
     with tab2:
-        st.header("🎓 Học Viện Ngôn Ngữ: Anh (CEFR) & Trung (HSK)")
+        st.header(T("t2_header"))
         
-        # --- 1. CẤU HÌNH HỌC TẬP (LANGUAGE & LEVEL) ---
-        c_cfg1, c_cfg2, c_cfg3 = st.columns([1, 1, 2])
+        # 1. Input tràn màn hình
+        txt = st.text_area(T("t2_input"), height=150, placeholder="Dán văn bản vào đây (Anh/Việt/Trung)...")
         
-        with c_cfg1:
-            # Chọn Ngôn ngữ
-            target_lang = st.selectbox("Ngôn ngữ muốn học:", ["🇬🇧 Tiếng Anh", "🇨🇳 Tiếng Trung"])
-        
-        with c_cfg2:
-            # Chọn Cấp độ (Dynamic theo ngôn ngữ)
-            if "Tiếng Anh" in target_lang:
-                levels = ["A1 (Mới bắt đầu)", "A2 (Sơ cấp)", "B1 (Trung cấp)", "B2 (Trung cao)", "C1 (Cao cấp)", "C2 (Thành thạo)"]
-            else:
-                levels = [f"HSK {i}" for i in range(1, 10)] # HSK 1 -> HSK 9
-            
-            user_level = st.selectbox("Trình độ hiện tại:", levels)
-            
-        with c_cfg3:
-            # Chọn Kỹ năng
-            skill_mode = st.radio("Chọn kỹ năng:", 
-                                 ["📖 Reading (Đọc)", "✍️ Writing (Viết)", "👂 Listening (Nghe)", "🗣️ Speaking (Nói)"], 
-                                 horizontal=True)
+        # 2. Các nút chọn nằm trên 1 hàng
+        c_lang, c_style, c_btn = st.columns([1, 1, 1])
+        with c_lang:
+            target_lang = st.selectbox(T("t2_target"), ["Tiếng Việt", "English", "中文 (Chinese)", "French", "Japanese"])
+        with c_style:
+            style = st.selectbox(T("t2_style"), T("t2_styles"))
+        with c_btn: 
+            st.write(""); st.write("")
+            btn_trans = st.button(T("t2_btn"), type="primary", use_container_width=True)
 
-        st.divider()
-
-        # --- KỸ NĂNG 1: READING (ĐỌC HIỂU THEO CẤP ĐỘ) ---
-        if "Reading" in skill_mode:
-            c1, c2 = st.columns([1, 1])
-            with c1:
-                txt_read = st.text_area(f"Dán văn bản {target_lang} vào đây:", height=300, placeholder="Dán bài báo, đoạn văn...")
-            with c2:
-                st.info(f"AI sẽ phân tích dựa trên trình độ **{user_level}**.")
-                if st.button("🔍 Phân Tích Bài Đọc", type="primary", use_container_width=True) and txt_read:
-                    with st.spinner("Giáo viên đang soạn giáo án..."):
-                        # Prompt tùy biến theo ngôn ngữ
-                        extra_req = "Bắt buộc cung cấp Pinyin cho toàn bộ chữ Hán." if "Trung" in target_lang else ""
-                        
-                        prompt = f"""
-                        Bạn là Giáo viên dạy {target_lang} trình độ {user_level}.
-                        Hãy phân tích đoạn văn sau cho học viên:
-                        "{txt_read}"
-                        
-                        YÊU CẦU (Output Markdown):
-                        1. **Dịch nghĩa:** Dịch sang Tiếng Việt mượt mà.
-                        2. **Từ vựng {user_level}:** Lọc ra 5 từ vựng quan trọng phù hợp với trình độ {user_level}. (Giải thích + Phiên âm/Pinyin + Ví dụ).
-                        3. **Ngữ pháp:** Giải thích 1 cấu trúc ngữ pháp hay trong bài.
-                        4. **Kiểm tra:** 3 câu hỏi trắc nghiệm đọc hiểu (Có đáp án).
-                        {extra_req}
-                        """
-                        res = run_gemini_safe(model.generate_content, prompt)
-                        if res: st.markdown(res.text)
-
-        # --- KỸ NĂNG 2: WRITING (SỬA LỖI & NÂNG CẤP) ---
-        elif "Writing" in skill_mode:
-            c1, c2 = st.columns([1, 1])
-            with c1:
-                txt_write = st.text_area("Viết bài của bạn vào đây:", height=300)
-            with c2:
-                st.info(f"AI sẽ chấm điểm theo thang **{user_level}**.")
-                if st.button("✍️ Chấm & Sửa Bài", type="primary", use_container_width=True) and txt_write:
-                    with st.spinner("Giám khảo đang chấm bài..."):
-                        prompt = f"""
-                        Đóng vai giám khảo chấm thi {target_lang} trình độ {user_level}.
-                        Bài làm của học viên: "{txt_write}"
-                        
-                        YÊU CẦU:
-                        1. **Sửa lỗi (Correction):** Chỉ ra lỗi sai (ngữ pháp, từ vựng, chính tả).
-                        2. **Nâng cấp (Upgrade):** Viết lại đoạn văn sao cho chuẩn văn phong {user_level} (hoặc cao hơn 1 bậc).
-                        3. **Đánh giá:** Ước lượng điểm số/nhận xét dựa trên tiêu chuẩn {user_level}.
-                        """
-                        res = run_gemini_safe(model.generate_content, prompt)
-                        if res: st.markdown(res.text)
-
-        # --- KỸ NĂNG 3: LISTENING (TẠO BÀI NGHE THEO LEVEL) ---
-        elif "Listening" in skill_mode:
-            st.subheader(f"📻 Phòng Luyện Nghe - Level {user_level}")
-            
-            c_topic, c_voice = st.columns([2, 1])
-            with c_topic:
-                topic_listen = st.text_input("Chủ đề muốn nghe (VD: Mua sắm, Du lịch...):", value="Giới thiệu bản thân")
-            with c_voice:
-                # Lọc giọng đọc theo ngôn ngữ
-                if "Tiếng Anh" in target_lang:
-                    v_opts = {"🇺🇸 Anh-Mỹ (Nam)": "en-US-AndrewMultilingualNeural", "🇺🇸 Anh-Mỹ (Nữ)": "en-US-EmmaNeural", "🇬🇧 Anh-Anh": "en-GB-SoniaNeural"}
-                else:
-                    v_opts = {"🇨🇳 Trung (Nam)": "zh-CN-YunjianNeural", "🇨🇳 Trung (Nữ)": "zh-CN-XiaoyiNeural", "🇹🇼 Đài Loan": "zh-TW-HsiaoChenNeural"}
+        # 3. Xử lý & Hiển thị kết quả (Tràn màn hình)
+        if btn_trans and txt:
+            with st.spinner("AI đang xử lý..."):
+                prompt = f"""
+                Bạn là Chuyên gia Ngôn ngữ.
+                Nhiệm vụ: Dịch và phân tích văn bản sau.
                 
-                voice_sel = st.selectbox("Giọng đọc:", list(v_opts.keys()))
-            
-            if st.button("🎧 Tạo Bài Nghe Mới"):
-                with st.spinner(f"AI đang viết kịch bản {user_level} & Thu âm..."):
-                    # 1. AI viết kịch bản theo Level
-                    lang_code = "English" if "Anh" in target_lang else "Chinese (Simplified)"
-                    prompt_script = f"""
-                    Write a short monologue/dialogue (approx 60 words) about: '{topic_listen}'.
-                    Target Language: {lang_code}.
-                    Difficulty Level: {user_level} (Use vocabulary and grammar suitable for this level).
-                    OUTPUT: Just the text content in {lang_code}. No translation yet.
-                    """
-                    res_script = run_gemini_safe(model.generate_content, prompt_script)
+                YÊU CẦU:
+                1. Ngôn ngữ đích: {target_lang}.
+                2. Phong cách: {style}.
+                3. QUAN TRỌNG: Nếu dịch sang TIẾNG TRUNG, bắt buộc cung cấp: Chữ Hán, Pinyin (có dấu).
+                4. Phân tích 3 từ vựng/cấu trúc hay nhất.
+                
+                Văn bản gốc: "{txt}"
+                """
+                res = run_gemini_safe(model.generate_content, prompt)
+                
+                if res:
+                    st.markdown("---")
+                    st.markdown(res.text)
                     
-                    if res_script:
-                        text_script = res_script.text.strip()
-                        st.session_state.listen_text = text_script
-                        
-                        # 2. Tạo Audio
-                        generate_edge_audio_sync(text_script, v_opts[voice_sel], "+0%", "listening_test.mp3")
-                        st.session_state.listen_ready = True
-            
-            # Phần nghe & chép chính tả
-            if st.session_state.get("listen_ready"):
-                st.audio("listening_test.mp3")
-                st.write("👉 **Nhiệm vụ:** Nghe và chép lại nội dung vào bên dưới.")
-                st.text_area("Chép chính tả:", height=100)
-                
-                with st.expander("👁️ HIỆN ĐÁP ÁN & PHÂN TÍCH"):
-                    st.success(st.session_state.get("listen_text", ""))
+                    # Nút tải HTML
+                    html_content = f"<html><body><h2>Translation</h2><p><b>Original:</b> {txt}</p><hr>{markdown.markdown(res.text)}</body></html>"
+                    st.download_button("💾 Download HTML", html_content, "translation.html", "text/html")
                     
-                    if st.button("Giải thích từ vựng trong bài này"):
-                        p_explain = f"Explain key vocabulary in this text for {user_level} student: {st.session_state.listen_text}"
-                        if "Trung" in target_lang: p_explain += ". Include Pinyin."
-                        res_exp = run_gemini_safe(model.generate_content, p_explain)
-                        if res_exp: st.markdown(res_exp.text)
+                    luu_lich_su_vinh_vien("Dịch Thuật", f"{target_lang}: {txt[:20]}...", res.text)
 
-        # --- KỸ NĂNG 4: SPEAKING (LUYỆN NÓI - GHI ÂM & AI CHẤM ĐIỂM) ---
-        elif "Speaking" in skill_mode:
-            st.subheader(f"🗣️ Phòng Luyện Nói & Chỉnh Âm ({target_lang})")
-            
-            c1, c2 = st.columns([1, 1])
-            with c1:
-                # 1. Nhập câu mẫu
-                default_txt = "Hello, nice to meet you." if "Anh" in target_lang else "你好，很高兴认识你。"
-                txt_speak = st.text_area("1. Nhập câu bạn muốn luyện:", height=100, value=default_txt)
-                
-                # 2. Nghe AI đọc mẫu (ĐÃ THÊM CƠ CHẾ BẮT LỖI)
-                if st.button("🔊 Nghe AI đọc mẫu"):
-                    if not txt_speak.strip():
-                        st.warning("⚠️ Vui lòng nhập nội dung cần đọc trước!")
-                    else:
-                        try:
-                            # Chọn giọng đọc ổn định hơn
-                            if "Anh" in target_lang:
-                                # Dùng giọng Christopher (Mỹ) cho ổn định thay vì Andrew
-                                v_code = "en-US-ChristopherNeural" 
-                            else:
-                                # Dùng giọng Xiaoyi (Trung)
-                                v_code = "zh-CN-XiaoyiNeural"
-                            
-                            with st.spinner("Đang tải âm thanh từ Server Microsoft..."):
-                                generate_edge_audio_sync(txt_speak, v_code, "+0%", "sample.mp3")
-                                st.audio("sample.mp3")
-                                
-                        except Exception as e:
-                            st.warning(f"⚠️ Server đọc đang bận, vui lòng thử lại sau vài giây. (Lỗi: {str(e)[:50]}...)")
-
-            with c2:
-                st.write("2. Bấm nút dưới để Ghi âm giọng của bạn:")
-                # Thư viện ghi âm
-                try:
-                    audio = mic_recorder(
-                        start_prompt="🎙️ Bắt đầu nói",
-                        stop_prompt="⏹️ Dừng (Gửi AI chấm)",
-                        key='recorder',
-                        format="wav",
-                        use_container_width=True
-                    )
-                except: 
-                    st.error("Lỗi thư viện ghi âm. Vui lòng F5 lại trang.")
-                    audio = None
-                
-                if audio:
-                    st.audio(audio['bytes']) # Nghe lại giọng mình
-                    
-                    if st.button("✨ CHẤM ĐIỂM PHÁT ÂM NGAY"):
-                        with st.spinner("AI đang nghe giọng bạn và soi từng lỗi..."):
-                            # Lưu file tạm để gửi cho Gemini
-                            temp_filename = "user_voice.wav"
-                            with open(temp_filename, "wb") as f:
-                                f.write(audio['bytes'])
-                            
-                            # Upload file lên Gemini (Tính năng Multimodal)
-                            try:
-                                audio_file = genai.upload_file(temp_filename)
-                                
-                                # Prompt cực chi tiết để chấm điểm
-                                prompt_scoring = f"""
-                                Act as a strict Pronunciation Coach for {target_lang}.
-                                
-                                1. I will provide an AUDIO file of a student speaking.
-                                2. The TARGET SENTENCE is: "{txt_speak}"
-                                
-                                TASK:
-                                Listen to the audio and compare it with the Target Sentence.
-                                
-                                OUTPUT FORMAT (Markdown):
-                                
-                                ## 🎯 ĐIỂM SỐ: [Score]/100
-                                
-                                ### 👂 AI Nghe Được Là:
-                                "[Transcribe exactly what the user said here]"
-                                
-                                ### ❌ Lỗi Sai Cụ Thể (Word-by-Word Analysis):
-                                Liệt kê từng từ sai. Với mỗi từ sai:
-                                - **Từ gốc:** ...
-                                - **Bạn đọc là:** (Dùng IPA hoặc mô tả âm thanh bạn nghe được)
-                                - **Lỗi sai:** (VD: Sai trọng âm, thiếu ending sound 's', sai thanh điệu...)
-                                - **Cách sửa:** Hướng dẫn khẩu hình/cách đặt lưỡi.
-                                
-                                ### 💡 Lời Khuyên Chung:
-                                Nhận xét về ngữ điệu (Intonation) và độ trôi chảy (Fluency).
-                                """
-                                
-                                # Gọi Gemini
-                                response = run_gemini_safe(model.generate_content, [prompt_scoring, audio_file])
-                                
-                                if response:
-                                    st.markdown("---")
-                                    st.markdown(response.text)
-                                
-                            except Exception as e:
-                                st.error(f"Lỗi xử lý âm thanh: {e}")
-                            finally:
-                                # Dọn dẹp file tạm
-                                if os.path.exists(temp_filename):
-                                    os.remove(temp_filename)
-                                    
-  # === TAB 3: ĐẤU TRƯỜNG TƯ DUY (MULTI-AGENT ARENA) ===
+  # === TAB 3: ĐẤU TRƯỜNG TƯ DUY (SỬ DỤNG GROQ API) ===
     with tab3:
         st.header(T("t3_header"))
         
         # 1. CHỌN CHẾ ĐỘ CHƠI
-        # Dùng key='mode_select_tab3' để tránh trùng ID với nơi khác
         mode = st.radio("Chọn chế độ:", ["👤 Solo (User vs AI)", "⚔️ Debate (AI vs AI)"], horizontal=True, key="mode_select_tab3")
 
         # 1.1. DANH SÁCH NHÂN VẬT 
@@ -701,7 +547,6 @@ def show_main_app():
 
         # --- CHẾ ĐỘ 1: SOLO (user vs AI) ---
         if mode == "👤 Solo (User vs AI)":
-            # Dùng Container để cô lập không gian ID
             with st.container():
                 c1, c2 = st.columns([3, 1])
                 with c1: 
@@ -721,7 +566,7 @@ def show_main_app():
                     st.chat_message("user").markdown(q)
                     st.session_state.chat_history.append({"role":"user", "content":q})
                     
-                    # Logic gọi AI
+                    # Logic gọi AI (Dùng Groq cho tốc độ)
                     history_text = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.chat_history[-5:]])
                     prompt = f"""
                     VAI TRÒ CỦA BẠN: {personas[p_sel]}
@@ -730,11 +575,20 @@ def show_main_app():
                     YÊU CẦU: Phân tích sâu, phản biện sắc sảo, và trả lời bằng ngôn ngữ của người dùng.
                     """
                     
-                    res = run_gemini_safe(model.generate_content, prompt)
+                    # GỌI GROQ API TẠI ĐÂY
+                    with st.spinner("Groq đang phản biện siêu tốc..."):
+                        res_text = run_groq_api(prompt, model="mixtral-8x7b-32768")
+                    
+                    if "[Groq Error" in res_text:
+                         st.error(f"Groq gặp lỗi: {res_text}")
+                         res = None
+                    else:
+                         res = res_text
+                        
                     if res:
-                        st.chat_message("assistant").markdown(res.text)
-                        st.session_state.chat_history.append({"role":"assistant", "content":res.text})
-                        luu_lich_su_vinh_vien("Tranh Biện Solo", f"Vs {p_sel}: {q}", res.text)
+                        st.chat_message("assistant").markdown(res)
+                        st.session_state.chat_history.append({"role":"assistant", "content":res})
+                        luu_lich_su_vinh_vien("Tranh Biện Solo", f"Vs {p_sel}: {q}", res)
 
         # --- CHẾ ĐỘ 2: DEBATE (AI vs AI) ---
         else:
@@ -775,12 +629,16 @@ def show_main_app():
                                             break
                                     p_prompt = f"VAI TRÒ: {p_name}. PHẢN BÁC: \"{target_name}\" vừa nói: \"{last_speech}\". Yêu cầu: Phản bác lại lập luận đó theo triết lý của bạn."
                                 
-                                # SỬ DỤNG HÀM AN TOÀN + SLEEP NHIỀU HƠN
-                                res = run_gemini_safe(model.generate_content, p_prompt)
-                                if res:
-                                    reply = res.text
-                                    st.session_state.battle_logs.append(f"**{p_name}:** {reply}")
-                                    time.sleep(4) # Tăng lên 4 giây để tránh lỗi ResourceExhausted
+                                # GỌI GROQ API TẠI ĐÂY (Vòng lặp)
+                                res_text = run_groq_api(p_prompt, model="mixtral-8x7b-32768")
+                                
+                                if "[Groq Error" in res_text:
+                                    st.error(f"Groq gặp lỗi: {res_text}. Dừng tranh biện.")
+                                    break # Dừng vòng lặp nếu Groq lỗi
+                                
+                                reply = res_text
+                                st.session_state.battle_logs.append(f"**{p_name}:** {reply}")
+                                time.sleep(2) # Giảm sleep để Groq chạy nhanh hơn
 
                         status.update(label="✅ Tranh luận kết thúc! (Đã chạy 3 vòng)", state="complete")
                         
@@ -793,7 +651,7 @@ def show_main_app():
                     st.markdown(log)
                     st.markdown("---")
 
-    # TAB 4: TTS (ĐÃ CÓ LẠI GIỌNG NỮ)
+    # TAB 4: TTS (Giữ nguyên)
     with tab4:
         st.header(T("t4_header"))
         v_opt = {
@@ -819,7 +677,7 @@ def show_main_app():
                 luu_lich_su_vinh_vien("Tạo Audio", v_sel, inp)
             except Exception as e: st.error(f"Error: {e}")
 
-    # TAB 5: LỊCH SỬ
+    # TAB 5: LỊCH SỬ (Giữ nguyên)
     with tab5:
         st.header(T("t5_header"))
         if st.button(T("t5_refresh")):
