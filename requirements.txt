@@ -19,4 +19,4 @@ google-auth
 python-telegram-bot  
 langdetect          
 streamlit-mic-recorder
-groq
+
