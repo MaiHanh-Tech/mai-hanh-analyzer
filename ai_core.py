@@ -79,11 +79,11 @@ class AI_Core:
                 st.caption(f"**AI Engine:** {' → '.join(status_parts)}")
 
     def _deepseek_generate(self, prompt, system_instruction=None, max_tokens=2000):
-        """✅ SỬA: Thêm timeout, giảm max_tokens, bỏ sleep dài"""
+        """DeepSeek generate with timeout config"""
         if not self.deepseek_ready: 
             return None
-        
-        models = ["deepseek-chat"]  # ✅ BỎ reasoner (chậm + đắt)
+
+        models = ["deepseek-chat"]
         messages = [{"role": "user", "content": prompt}]
         if system_instruction:
             messages.insert(0, {"role": "system", "content": system_instruction})
@@ -93,18 +93,15 @@ class AI_Core:
                 resp = self.deepseek_client.chat.completions.create(
                     model=model,
                     messages=messages,
-                    temperature=0.7,  # ✅ GIẢM
-                    max_tokens=max_tokens,  # ✅ ĐỘNG
-                    timeout=self.DEFAULT_TIMEOUT  # ✅ THÊM
+                    temperature=0.7,
+                    max_tokens=max_tokens,
+                    timeout=self.DEFAULT_TIMEOUT
                 )
                 return resp.choices[0].message.content.strip()
-            except Timeout:
-                # ✅ Timeout → Bỏ qua model này
-                continue
             except (RateLimitError, APIError):
-                time.sleep(2)  # ✅ GIẢM từ 5s → 2s
+                time.sleep(2)
                 continue
-            except Exception:
+            except Exception:  # Bắt tất cả lỗi còn lại (bao gồm timeout thực tế)
                 continue
         return None
 
@@ -137,11 +134,11 @@ class AI_Core:
             return None
 
     def _grok_generate(self, prompt, system_instruction=None, max_tokens=2000):
-        """✅ SỬA: Thêm timeout, giảm max_tokens"""
+        """Grok generate with timeout config"""
         if not self.grok_ready: 
             return None
-        
-        models = ["grok-beta"]  # ✅ Chỉ dùng 1 model (nhanh hơn)
+
+        models = ["grok-beta"]
         messages = [{"role": "user", "content": prompt}]
         if system_instruction:
             messages.insert(0, {"role": "system", "content": system_instruction})
@@ -153,15 +150,13 @@ class AI_Core:
                     messages=messages,
                     temperature=0.7,
                     max_tokens=max_tokens,
-                    timeout=self.DEFAULT_TIMEOUT  # ✅ THÊM
+                    timeout=self.DEFAULT_TIMEOUT
                 )
                 return resp.choices[0].message.content.strip()
-            except Timeout:
-                continue
             except (RateLimitError, APIError):
-                time.sleep(2)  # ✅ GIẢM từ 5s → 2s
+                time.sleep(2)
                 continue
-            except Exception:
+            except Exception:  # Bắt tất cả, bao gồm timeout
                 continue
         return None
 
