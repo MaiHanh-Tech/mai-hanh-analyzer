@@ -127,42 +127,50 @@ class AI_Core:
         return None
 
     def generate(self, prompt, model_type="pro", system_instruction=None):
-        """GROK → GEMINI → DEEPSEEK - Auto fallback"""
         self.status_message.info("🤖 Đang gọi AI...")
     
-        # ✅ DEBUG: Log trạng thái
-        st.caption(f"🔍 Status: Grok={self.grok_ready}, Gemini={self.gemini_ready}, Deepseek={self.deepseek_ready}")
-    
-        # 1️⃣ GROK (Best)
+        # 1️⃣ GROK - Debug thật
         if self.grok_ready:
-            st.caption("🔄 Thử Grok...")
-            result = self._grok_generate(prompt, system_instruction)
-            if result:
-                self.status_message.success("🎯 Grok hoàn thành")
-                return result
-            else:
-                st.warning("❌ Grok fail → thử Gemini")
+                st.caption("🔄 Thử Grok...")
+            try:
+                result = self._grok_generate(prompt, system_instruction)
+                if result:
+                    self.status_message.success("🎯 Grok OK")
+                    return result
+                else:
+                    st.error("❌ Grok return None")
+            except Exception as e:
+                st.error(f"❌ Grok EXCEPTION: {str(e)[:100]}")
 
-        # 2️⃣ GEMINI  
+        # 2️⃣ GEMINI - Debug thật  
         if self.gemini_ready:
             st.caption(f"🔄 Thử Gemini ({model_type})...")
-            result = self._gemini_generate(prompt, model_type, system_instruction)
-            if result:
-                self.status_message.success("🔄 Gemini hoàn thành")
-                return result
-            else:
-                st.warning("❌ Gemini fail → thử DeepSeek")
+            try:
+                result = self._gemini_generate(prompt, model_type, system_instruction)
+                if result:
+                    self.status_message.success("🔄 Gemini OK")
+                    return result
+                else:
+                    st.error("❌ Gemini return None")
+            except Exception as e:
+                st.error(f"❌ Gemini EXCEPTION: {str(e)[:100]}")
 
-        # 3️⃣ DEEPSEEK FREE
+        # 3️⃣ DEEPSEEK - Debug thật (QUAN TRỌNG NHẤT)
         if self.deepseek_ready:
             st.caption("🔄 Thử DeepSeek...")
-            result = self._deepseek_generate(prompt, system_instruction)
-            if result:
-                self.status_message.success("💰 DeepSeek FREE hoàn thành")
-                return result
+            try:
+                result = self._deepseek_generate(prompt, system_instruction)
+                if result:
+                    self.status_message.success("💰 DeepSeek OK")
+                    return result
+                else:
+                    st.error("❌ DeepSeek return None")
+            except Exception as e:
+                st.error(f"❌ DeepSeek EXCEPTION: {str(e)[:100]}")
+    
+        self.status_message.error("⚠️ TẤT CẢ API FAIL")
+        return "⚠️ Debug: Xem error trên để biết API nào lỗi!"
 
-        self.status_message.error("⚠️ Tất cả API bận!")
-        return "⚠️ Hệ thống bận!"
 
 
     @staticmethod
