@@ -28,7 +28,7 @@ if 'user_logged_in' not in st.session_state:
     st.session_state.user_logged_in = False
 
 if not st.session_state.user_logged_in:
-    st.title("🔐 Đăng Nhập Hệ Thống")
+    st.title("🔐 Đăng Nhập Hệ Thống/Log in")
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         pwd = st.text_input("Nhập mật khẩu:", type="password", placeholder="Nhập mật khẩu của bạn")
@@ -46,15 +46,15 @@ if not st.session_state.user_logged_in:
 
 # 4. SIDEBAR & NAVIGATION
 with st.sidebar:
-    st.title("🗂️ DANH MỤC ỨNG DỤNG")
+    st.title("🗂️ DANH MỤC ỨNG DỤNG/LIST APP")
     user_name = st.session_state.current_user.replace("Super", "")
-    st.info(f"👤 Xin chào: **{user_name.strip()}**")
+    st.info(f"👤 Hello: **{user_name.strip()}**")
     app_choice = st.radio("Chọn công việc:", [
-        "💰 1. Cognitive Weaver (Sách & Graph)",
-        "🧠 2. CFO Controller (Tài chính)"
+        "💰 1. Cognitive Weaver",
+        "🧠 2. CFO Controller"
     ])
     st.divider()
-    if st.button("Đăng Xuất"):
+    if st.button("Đăng Xuất/Log out"):
         st.session_state.user_logged_in = False
         st.rerun()
 
@@ -88,7 +88,7 @@ try:
     if app_choice == "💰 1. Cognitive Weaver (Sách & Graph)":
         import module_weaver as mw
         safe_run_module(mw.run, "Cognitive Weaver")
-    elif app_choice == "🧠 2. CFO Controller (Tài chính)":
+    elif app_choice == "🧠 2. CFO Controller":
         import module_cfo as mc
         safe_run_module(mc.run, "CFO Controller")
 except ImportError as e:
