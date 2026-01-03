@@ -531,7 +531,7 @@ def run():
                                         with st.chat_message("assistant", avatar=icon):
                                             st.markdown(content_fmt)
                                         
-                                        time.sleep(3)
+                                        time.sleep(4)
                                         
                                     else:
                                         st.error(f"❌ {p_name} không trả lời được")
