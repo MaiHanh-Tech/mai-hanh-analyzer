@@ -47,7 +47,8 @@ if not st.session_state.user_logged_in:
 # 4. SIDEBAR & NAVIGATION
 with st.sidebar:
     st.title("🗂️ DANH MỤC ỨNG DỤNG")
-    st.info("👤 Xin chào: **Admin**")
+    user_name = st.session_state.current_user.replace("Super", "")
+    st.info(f"👤 Xin chào: **{user_name.strip()}**")
     app_choice = st.radio("Chọn công việc:", [
         "💰 1. Cognitive Weaver (Sách & Graph)",
         "🧠 2. CFO Controller (Tài chính)"
