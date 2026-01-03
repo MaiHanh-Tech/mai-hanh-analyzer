@@ -473,14 +473,14 @@ def run():
 
                 with st.status("🔥 Cuộc chiến đang diễn ra (3 vòng)...") as status:
                     try:
-                        for round_num in range(1, 4):
+                        for round_num in range(1, 3):
                             # ✅ THÊM: Kiểm tra timeout tổng
                             elapsed = time.time() - start_time
                             if elapsed > MAX_DEBATE_TIME:
                                 st.warning(f"⏰ Hết giờ! (Đã chạy {elapsed:.0f}s)")
                                 break
 
-                            status.update(label=f"🔄 Vòng {round_num}/3...")
+                            status.update(label=f"🔄 Vòng {round_num}/2...")
 
                             for i, p_name in enumerate(participants):
                                 # ✅ Kiểm tra timeout từng vòng
@@ -493,7 +493,7 @@ def run():
                                     context_str = "\n".join([f"{m['role']}: {m['content']}" for m in recent_msgs])
 
                                 # ✅ TĂNG CƯỜNG: Bắt buộc ngắn gọn hơn
-                                length_instruction = " (BẮT BUỘC: Trả lời KHÔNG QUÁ 100 từ. Chỉ nêu luận điểm chính, không dài dòng.)"
+                                length_instruction = " (BẮT BUỘC: Trả lời KHÔNG QUÁ 200 từ. Chỉ nêu luận điểm chính, không dài dòng.)"
 
                                 if round_num == 1:
                                     p_prompt = f"CHỦ ĐỀ: {topic}\nNHIỆM VỤ (Vòng 1): Nêu 1 quan điểm chính + 2 lý lẽ. {length_instruction}"
@@ -531,7 +531,7 @@ def run():
                                         with st.chat_message("assistant", avatar=icon):
                                             st.markdown(content_fmt)
                                         
-                                        # ✅ BỎ time.sleep(5) - KHÔNG CẦN CHỜ
+                                        time.sleep(3)
                                         
                                     else:
                                         st.error(f"❌ {p_name} không trả lời được")
