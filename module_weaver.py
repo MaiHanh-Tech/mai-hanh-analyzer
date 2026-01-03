@@ -440,7 +440,7 @@ def run():
             with c2:
                 if st.button(T("t3_clear"), key="w_t3_clr"):
                     st.session_state.weaver_chat = []
-                    st.rerun()
+                    
             for msg in st.session_state.weaver_chat:
                 st.chat_message(msg["role"]).write(msg["content"])
             if prompt := st.chat_input(T("t3_input")):
@@ -578,7 +578,6 @@ def run():
         st.subheader("⏳ Nhật Ký & Phản Chiếu Tư Duy")
         if st.button("🔄 Tải lại", key="w_t5_refresh"):
             st.session_state.history_cloud = tai_lich_su()
-            st.rerun()
 
         data = st.session_state.get("history_cloud", tai_lich_su())
 
