@@ -99,7 +99,7 @@ class AI_Core:
                 )
                 return resp.choices[0].message.content.strip()
             except (RateLimitError, APIError):
-                time.sleep(2)
+                time.sleep(3)
                 continue
             except Exception:  # Bắt tất cả lỗi còn lại (bao gồm timeout thực tế)
                 continue
@@ -111,10 +111,10 @@ class AI_Core:
             return None
         
         valid_models = {
-            "flash": "gemini-2.0-flash-exp",
-            "pro": "gemini-2.0-flash-exp"  # ✅ Dùng flash cho cả 2 (nhanh hơn)
+            "flash": "gemini-2.5-flash",
+            "pro": "gemini-2.5-pro"  
         }
-        model_name = valid_models.get(model_type, "gemini-2.0-flash-exp")
+        model_name = valid_models.get(model_type, "gemini-2.5-flash")
 
         try:
             model = genai.GenerativeModel(
@@ -199,7 +199,7 @@ class AI_Core:
             # ✅ Ưu tiên Gemini cho RAG (có cache)
             if "api_keys" in st.secrets and "gemini_api_key" in st.secrets["api_keys"]:
                 genai.configure(api_key=st.secrets["api_keys"]["gemini_api_key"])
-                model = genai.GenerativeModel("gemini-2.0-flash-exp")
+                model = genai.GenerativeModel("gemini-2.5-flash")
                 text = text[:150000]  # ✅ Gemini chịu context dài
                 response = model.generate_content(f"{instruction}\n\n{text}")
                 if response and response.text:
