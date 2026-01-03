@@ -29,7 +29,19 @@ class AI_Core:
         except Exception:
             pass
 
-        # 2. GEMINI
+        # 2. DEEPSEEK
+        try:
+            if "deepseek" in st.secrets and "api_key" in st.secrets["deepseek"]:
+                self.deepseek_client = OpenAI(
+                    api_key=st.secrets["deepseek"]["api_key"],
+                    base_url="https://api.deepseek.com/v1"
+                )
+                self.deepseek_ready = True
+        except Exception:
+            pass
+        
+        
+        # 3. GEMINI
         try:
             if "api_keys" in st.secrets and "gemini_api_key" in st.secrets["api_keys"]:
                 genai.configure(api_key=st.secrets["api_keys"]["gemini_api_key"])
@@ -51,23 +63,13 @@ class AI_Core:
         except Exception:
             pass
 
-        # 3. DEEPSEEK FREE
-        try:
-            if "deepseek" in st.secrets and "api_key" in st.secrets["deepseek"]:
-                self.deepseek_client = OpenAI(
-                    api_key=st.secrets["deepseek"]["api_key"],
-                    base_url="https://api.deepseek.com/v1"
-                )
-                self.deepseek_ready = True
-        except Exception:
-            pass
-
+        
         # Status tổng quan
         with self.status_container:
             status_parts = []
             if self.grok_ready: status_parts.append("🟢 Grok")
             if self.gemini_ready: status_parts.append("🟡 Gemini")
-            if self.deepseek_ready: status_parts.append("🟣 DeepSeek FREE")
+            if self.deepseek_ready: status_parts.append("🟣 DeepSeek")
             if not status_parts:
                 st.error("🔴 Không có API nào sẵn sàng")
             else:
@@ -91,7 +93,7 @@ class AI_Core:
                 )
                 return resp.choices[0].message.content.strip()
             except (RateLimitError, APIError, AuthenticationError):
-                time.sleep(3)
+                time.sleep(5)
                 continue
             except Exception:
                 continue
@@ -101,7 +103,7 @@ class AI_Core:
         if not self.gemini_ready: return None
         valid_models = {
             "flash": "gemini-2.5-flash",
-            "pro": "gemini-2.5-pro"  # Bản ổn định 2026
+            "pro": "gemini-2.5-pro"  
         }
         model_name = valid_models.get(model_type, "gemini-2.5-flash")
 
@@ -138,7 +140,7 @@ class AI_Core:
                 )
                 return resp.choices[0].message.content.strip()
             except (RateLimitError, APIError, AuthenticationError):
-                time.sleep(3)
+                time.sleep(5)
                 continue
             except Exception:
                 continue
@@ -155,27 +157,29 @@ class AI_Core:
                 self.status_message.success("🎯 Grok hoàn thành")
                 return result
 
-        # 2. GEMINI
+        # 2. DEEPSEEK FREE
+        if self.deepseek_ready:
+            result = self._deepseek_generate(prompt, system_instruction)
+            if result:
+                self.status_message.success("💰 DeepSeek hoàn thành")
+                return result
+        
+        
+        # 3. GEMINI
         if self.gemini_ready:
             result = self._gemini_generate(prompt, model_type, system_instruction)
             if result:
                 self.status_message.success("🔄 Gemini hoàn thành")
                 return result
 
-        # 3. DEEPSEEK FREE
-        if self.deepseek_ready:
-            result = self._deepseek_generate(prompt, system_instruction)
-            if result:
-                self.status_message.success("💰 DeepSeek FREE hoàn thành")
-                return result
-
+        
         self.status_message.error("⚠️ Tất cả API bận")
         return "⚠️ Hệ thống bận. Thử lại sau 1-2 phút nhé chị!"
 
     @staticmethod
     @st.cache_data(ttl=3600)
     def analyze_static(text, instruction):
-        """RAG dùng DeepSeek FREE (context dài + tiết kiệm)"""
+        """RAG dùng DeepSeek (context dài + tiết kiệm)"""
         try:
             if "deepseek" not in st.secrets:
                 return "❌ Cần DeepSeek key cho RAG"
