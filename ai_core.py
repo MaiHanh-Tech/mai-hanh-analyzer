@@ -198,31 +198,34 @@ class AI_Core:
 
     @staticmethod
     @st.cache_data(ttl=3600)
-def _safe_analyze_gemini(text, instruction):
-    """Only Gemini - NO except clauses"""
-    genai.configure(api_key=st.secrets["api_keys"]["gemini_api_key"])
-    model = genai.GenerativeModel("gemini-2.0-flash-exp")
-    return model.generate_content(f"{instruction}\n\n{text[:150000]}").text.strip()
-
-@st.cache_data(ttl=3600) 
-def _safe_analyze_deepseek(text, instruction):
-    """Only DeepSeek - NO except clauses"""
-    client = OpenAI(api_key=st.secrets["deepseek"]["api_key"], 
-                   base_url="https://api.deepseek.com/v1", timeout=60)
-    resp = client.chat.completions.create(model="deepseek-chat",
-                                        messages=[{"role": "system", "content": instruction},
-                                                 {"role": "user", "content": text[:180000]}],
-                                        max_tokens=4000, temperature=0.3)
-    return resp.choices[0].me`ssage.content.strip()
-
-def analyze_static(text, instruction):  # NO CACHE HERE
-    """✅ Main method with proper error handling"""
-    try:
-        if "api_keys" in st.secrets:
-            return _safe_analyze_gemini(text, instruction)
+    def analyze_static(text, instruction):
+        """✅ RAG dùng Gemini (có cache, nhanh) - FIXED NO EXCEPT"""
+        # ✅ KHÔNG dùng try/except trong cached function
+        if "api_keys" in st.secrets and "gemini_api_key" in st.secrets["api_keys"]:
+            genai.configure(api_key=st.secrets["api_keys"]["gemini_api_key"])
+            model = genai.GenerativeModel("gemini-2.0-flash-exp")
+            text = text[:150000]
+            response = model.generate_content(f"{instruction}\n\n{text}")
+            if response and response.text:
+                return response.text.strip()
+    
         if "deepseek" in st.secrets:
-            return _safe_analyze_deepseek(text, instruction)
+            client = OpenAI(
+                api_key=st.secrets["deepseek"]["api_key"],
+                base_url="https://api.deepseek.com/v1",
+                timeout=60
+            )
+            text = text[:180000]
+            resp = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": instruction},
+                    {"role": "user", "content": text}
+                ],
+                max_tokens=4000,
+                temperature=0.3
+            )
+            return resp.choices[0].message.content.strip()
+        
         return "❌ Không có API khả dụng"
-    except Exception as e:
-        return f"❌ RAG lỗi: {str(e)[:150]}"
 
