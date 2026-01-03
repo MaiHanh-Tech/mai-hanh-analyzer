@@ -91,7 +91,7 @@ class AI_Core:
         
         valid_models = {
             "flash": "gemini-2.5-flash",
-            "pro": "gemini-2.5-pro-exp"  # ✅ SỬA: Tên model chuẩn
+            "pro": "gemini-2.5-pro"  # ✅ SỬA: Tên model chuẩn
         }
         model_name = valid_models.get(model_type, "gemini-2.5-flash")
 
