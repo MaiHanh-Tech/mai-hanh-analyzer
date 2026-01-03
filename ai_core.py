@@ -127,11 +127,12 @@ class AI_Core:
         return None
 
     def generate(self, prompt, model_type="pro", system_instruction=None):
+        """GROK → GEMINI → DEEPSEEK - Auto fallback"""
         self.status_message.info("🤖 Đang gọi AI...")
-    
+        
         # 1️⃣ GROK - Debug thật
         if self.grok_ready:
-                st.caption("🔄 Thử Grok...")
+            st.caption("🔄 Thử Grok...")
             try:
                 result = self._grok_generate(prompt, system_instruction)
                 if result:
@@ -155,7 +156,7 @@ class AI_Core:
             except Exception as e:
                 st.error(f"❌ Gemini EXCEPTION: {str(e)[:100]}")
 
-        # 3️⃣ DEEPSEEK - Debug thật (QUAN TRỌNG NHẤT)
+        # 3️⃣ DEEPSEEK - Debug thật
         if self.deepseek_ready:
             st.caption("🔄 Thử DeepSeek...")
             try:
@@ -167,11 +168,9 @@ class AI_Core:
                     st.error("❌ DeepSeek return None")
             except Exception as e:
                 st.error(f"❌ DeepSeek EXCEPTION: {str(e)[:100]}")
-    
+        
         self.status_message.error("⚠️ TẤT CẢ API FAIL")
         return "⚠️ Debug: Xem error trên để biết API nào lỗi!"
-
-
 
     @staticmethod
     @st.cache_data(ttl=3600)
