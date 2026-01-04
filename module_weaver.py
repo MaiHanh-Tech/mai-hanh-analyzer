@@ -493,7 +493,7 @@ def run():
                                     context_str = "\n".join([f"{m['role']}: {m['content']}" for m in recent_msgs])
 
                                 # ✅ TĂNG CƯỜNG: Bắt buộc ngắn gọn hơn
-                                length_instruction = " (BẮT BUỘC: Trả lời KHÔNG QUÁ 200 từ. Chỉ nêu luận điểm chính, không dài dòng.)"
+                                length_instruction = " (BẮT BUỘC: Trả lời chi tiết nhưng KHÔNG QUÁ 800 từ. Tập trung vào luận điểm chính.)"
 
                                 if round_num == 1:
                                     p_prompt = f"CHỦ ĐỀ: {topic}\nNHIỆM VỤ (Vòng 1): Nêu 1 quan điểm chính + 2 lý lẽ. {length_instruction}"
