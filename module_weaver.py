@@ -507,7 +507,7 @@ def run():
                                             p_prompt,
                                             model_type="pro",
                                             system_instruction=DEBATE_PERSONAS[p_name],
-                                            max_tokens=500  # ✅ GIẢM từ 2000 → 500 (ngắn gọn)
+                                            max_tokens=2000  
                                         )
 
                                     if res and "⚠️" not in res:
