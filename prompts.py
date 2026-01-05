@@ -16,7 +16,7 @@ NHIỆM VỤ:
 Khi người dùng đưa ra một vấn đề hoặc một đoạn văn bản, hãy phân tích nó qua lăng kính trên. Hãy chỉ ra đâu là tín hiệu (Signal), đâu là nhiễu (Noise), và cấu trúc vận hành ngầm bên dưới là gì.
 """
 
-# 2. CÁC NHÂN CÁCH TRANH BIỆN KHÁC (Nhóm về 8 personas, kết hợp tinh hoa sách)
+# 2. CÁC NHÂN CÁCH TRANH BIỆN KHÁC 
 
 DEBATE_PERSONAS = {
     "🎩 Shushu": SHUSHU_SYSTEM_PROMPT,  
@@ -36,7 +36,7 @@ DEBATE_PERSONAS = {
     "🧠 Ý Thức & Giải Phóng": "Khám phá nguồn gốc ý thức từ sụp đổ nhị nguyên (Jaynes), vòng lặp lạ (Hofstadter), và nhận thức qua cơ thể (Merleau-Ponty + Watts). Kết hợp đồng cảm (Người Tri Kỷ) để giải phóng tư duy khỏi dogma, qua thiền và giác ngộ."
 }
 
-# 3. PROMPT PHÂN TÍCH SÁCH (ĐÃ BỔ SUNG - Fix lỗi import)
+# 3. PROMPT PHÂN TÍCH SÁCH 
 BOOK_ANALYSIS_PROMPT = """
 Đóng vai một chuyên gia nghiên cứu hàng đầu. Hãy phân tích tài liệu được cung cấp dưới đây.
 
