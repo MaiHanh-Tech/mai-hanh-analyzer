@@ -207,11 +207,15 @@ def run():
 
     with st.sidebar:
         st.markdown("---")
-        st.selectbox(
-            "🌐 " + T("lang_select"),
+        lang_choice = st.selectbox(
+            "🌐 " + TRANS['vi']['lang_select'],  # ✅ Dùng trực tiếp, không qua T()
             ["Tiếng Việt", "English", "中文"],
-            key="weaver_lang"  # Key này tự động lưu vào session_state, không cần if-elif
+            key="weaver_lang_selector"
         )
+    
+        # ✅ Map sang mã ngôn ngữ
+        lang_map = {"Tiếng Việt": "vi", "English": "en", "中文": "zh"}
+        st.session_state.weaver_lang = lang_map.get(lang_choice, "vi")
 
     st.header(f"🧠 The Cognitive Weaver")
     
