@@ -47,7 +47,7 @@ class AI_Core:
                 ]
                 self.gen_config = genai.GenerationConfig(
                     temperature=0.7,  # ✅ GIẢM từ 0.8 → 0.7 (ít random hơn)
-                    max_output_tokens=5000,  # ✅ GIẢM từ 7000 → 2000 (tranh biện ngắn gọn)
+                    max_output_tokens=5000,  
                     top_p=0.9,  # ✅ GIẢM từ 0.95 → 0.9
                     top_k=40
                 )
@@ -160,7 +160,7 @@ class AI_Core:
                 continue
         return None
 
-    def generate(self, prompt, model_type="pro", system_instruction=None, max_tokens=2000):
+    def generate(self, prompt, model_type="pro", system_instruction=None, max_tokens=4000):
         """
         ✅ CHIẾN LƯỢC MỚI: Gemini FIRST (nhanh nhất)
         Gemini → DeepSeek → Grok
