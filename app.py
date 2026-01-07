@@ -85,7 +85,7 @@ with st.sidebar:
 
 # 5. LOAD UI MODULES AN TOÀN
 try:
-    if app_choice == "💰 1. Cognitive Weaver (Sách & Graph)":
+    if app_choice == "💰 1. Cognitive Weaver":
         import module_weaver as mw
         safe_run_module(mw.run, "Cognitive Weaver")
     elif app_choice == "🧠 2. CFO Controller":
