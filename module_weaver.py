@@ -213,7 +213,7 @@ def run():
             key="weaver_lang"  # Key này tự động lưu vào session_state, không cần if-elif
         )
 
-        st.header(f"🧠 The Cognitive Weaver")
+    st.header(f"🧠 The Cognitive Weaver")
     
     # ✅ HIỂN THỊ TRẠNG THÁI KG (MỚI)
     if knowledge_universe:
